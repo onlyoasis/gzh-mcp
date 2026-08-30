@@ -46,6 +46,9 @@
 
 - `WECHAT_SECRET` 与 access_token 全链路脱敏，不出现在错误信息、日志或
   stdout；stdout 只承载 MCP JSON-RPC 协议，诊断信息一律写 stderr。
+- 错误详情对调用方可见：微信业务错误（errcode、errmsg、接口路径）、本地
+  校验拒绝与 confirm 闸门拒绝理由都完整返回给 MCP 调用方，不会被 SDK
+  掩码成通用的 `Error executing tool`。
 - 非幂等接口（创建草稿、发布、群发与定向推送）遇网络传输错误返回
   「状态不确定」错误并**禁止自动重试**，防止重复建稿、重复提交。
 - 只读接口遇传输错误、HTTP 5xx 或微信 `errcode=-1` 时最多退避重试一次。

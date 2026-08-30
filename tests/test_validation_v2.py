@@ -19,11 +19,6 @@ def test_b17_datacube_span_table_has_all_supported_reports() -> None:
     assert set(DATACUBE_MAX_DAYS) == {
         "getusersummary",
         "getusercumulate",
-        "getarticlesummary",
-        "getuserread",
-        "getuserreadhour",
-        "getusershare",
-        "getusersharehour",
         "getarticleread",
         "getarticleshare",
         "getbizsummary",
@@ -46,8 +41,7 @@ def test_b17_datacube_span_table_has_all_supported_reports() -> None:
         ("unknown", "2026-08-01", "2026-08-01", "report"),
         ("getusersummary", "2026/08/01", "2026-08-01", "YYYY-MM-DD"),
         ("getusersummary", "2026-08-02", "2026-08-01", "晚于"),
-        ("getarticlesummary", "2026-08-01", "2026-08-02", "1 天"),
-        ("getuserread", "2026-08-01", "2026-08-04", "3 天"),
+        ("getarticleread", "2026-08-01", "2026-08-02", "1 天"),
         ("getusersummary", "2026-08-01", "2026-08-08", "7 天"),
         ("getupstreammsgdist", "2026-08-01", "2026-08-16", "15 天"),
         ("getinterfacesummary", "2026-08-01", "2026-08-31", "30 天"),
@@ -63,8 +57,8 @@ def test_b17_datacube_validation_rejects_bad_range(
 @pytest.mark.parametrize(
     ("report", "begin_date", "end_date"),
     [
-        ("getarticlesummary", "2026-08-01", "2026-08-01"),
-        ("getuserread", "2026-08-01", "2026-08-03"),
+        ("getarticleread", "2026-08-01", "2026-08-01"),
+        ("getarticleshare", "2026-08-01", "2026-08-01"),
         ("getusersummary", "2026-08-01", "2026-08-07"),
         ("getupstreammsgdist", "2026-08-01", "2026-08-15"),
         ("getinterfacesummary", "2026-08-01", "2026-08-30"),
@@ -77,6 +71,22 @@ def test_b17_datacube_validation_accepts_inclusive_max_span(
         date.fromisoformat(begin_date),
         date.fromisoformat(end_date),
     )
+
+
+def test_b26_offline_datacube_reports_are_rejected() -> None:
+    """真实账号实测（2026-08-30）：旧系列图文统计接口微信已全局下线，
+    errcode=47009 "this api is offline, please use the new api"，
+    注册表不得再接受这些 report。"""
+
+    for report in (
+        "getarticlesummary",
+        "getuserread",
+        "getuserreadhour",
+        "getusershare",
+        "getusersharehour",
+    ):
+        with pytest.raises(ValidationError, match="report 不受支持"):
+            validate_datacube_request(report, "2026-08-29", "2026-08-29")
 
 
 def test_b19_menu_rejects_more_than_three_top_level_buttons() -> None:

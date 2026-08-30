@@ -5,6 +5,7 @@ from typing import Any
 import pytest
 from mcp import Client
 
+from gzh_mcp.errors import WechatAPIError
 from gzh_mcp.server import create_server
 
 
@@ -183,3 +184,38 @@ async def test_b25_delete_conditional_menu_accepts_integer_menu_id() -> None:
         )
     assert result.is_error is False
     assert client.calls and client.calls[0][0] == "delete_conditional_menu"
+
+
+class MenulessClient:
+    """get_current_menu 固定抛 46003，模拟真实账号无菜单的业务错误。"""
+
+    async def get_current_menu(self) -> dict[str, object]:
+        raise WechatAPIError("/menu/get", 46003, "menu no exist")
+
+
+@pytest.mark.asyncio
+async def test_b27_wechat_error_details_reach_mcp_caller() -> None:
+    """真实账号探针发现（2026-08-30）：WechatAPIError 不是 ToolError 子类时，
+    SDK 把所有异常掩码成 "Error executing tool X"，调用方看不到
+    errcode/errmsg，无法区分账号限制与代码缺陷。修复后详情必须完整可见。"""
+
+    server = create_server(client=MenulessClient(), environ={})
+    async with Client(server) as mcp_client:
+        result = await mcp_client.call_tool("get_current_menu", {})
+    assert result.is_error is True
+    text = result.content[0].text
+    assert "errcode=46003" in text
+    assert "menu no exist" in text
+
+
+@pytest.mark.asyncio
+async def test_b27_confirm_gate_reason_reaches_mcp_caller() -> None:
+    """安全闸门的拒绝理由同样必须到达调用方（修复前只在服务端 stderr）。"""
+
+    client = RecordingClient()
+    server = create_server(client=client, environ={})
+    async with Client(server) as mcp_client:
+        result = await mcp_client.call_tool("delete_menu", {})
+    assert result.is_error is True
+    assert "必须显式传 confirm=true" in result.content[0].text
+    assert client.calls == []

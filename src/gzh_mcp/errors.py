@@ -5,6 +5,8 @@ from __future__ import annotations
 import re
 from collections.abc import Iterable
 
+from mcp.server.mcpserver.exceptions import ToolError
+
 
 _SENSITIVE_ASSIGNMENT = re.compile(
     r"(?i)(access_token|token|secret)(\s*[=:]\s*)([^\s&]+)"
@@ -20,8 +22,13 @@ def redact(value: object, secrets: Iterable[str] = ()) -> str:
     return _SENSITIVE_ASSIGNMENT.sub(r"\1\2***", text)
 
 
-class WechatError(RuntimeError):
-    """所有可安全展示的微信调用错误基类。"""
+class WechatError(RuntimeError, ToolError):
+    """所有可安全展示的微信调用错误基类。
+
+    继承 ToolError（2026-08-30 真机探针发现）：否则 mcp SDK 会把异常掩码成
+    "Error executing tool X"，调用方看不到 errcode/errmsg，无法区分账号限制
+    与代码缺陷。消息已经过脱敏，可安全直达调用方。
+    """
 
 
 class WechatTransportError(WechatError):

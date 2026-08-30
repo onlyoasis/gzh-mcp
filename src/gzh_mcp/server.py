@@ -7,6 +7,7 @@ from collections.abc import Mapping
 from typing import Any
 
 from mcp.server import MCPServer
+from mcp.server.mcpserver.exceptions import ToolError
 from mcp.types import ToolAnnotations
 
 from .validation import is_publish_enabled
@@ -35,8 +36,9 @@ PUBLISH_MUTATION = DESTRUCTIVE_MUTATION
 
 
 def _require_confirmation(tool_name: str, confirm: bool) -> None:
+    # 抛 ToolError 使拒绝理由直达调用方（ValueError 会被 SDK 掩码）。
     if confirm is not True:
-        raise ValueError(f"{tool_name} 必须显式传 confirm=true")
+        raise ToolError(f"{tool_name} 必须显式传 confirm=true")
 
 
 def register_v1_tools(
@@ -388,7 +390,7 @@ def register_message_tools(
 
             _require_confirmation("mass_send_by_tag", confirm)
             if not clientmsgid:
-                raise ValueError("mass_send_by_tag 必须提供 clientmsgid")
+                raise ToolError("mass_send_by_tag 必须提供 clientmsgid")
             return await client.mass_send_by_tag(tag_id, message, clientmsgid)
 
         @server.tool(annotations=DESTRUCTIVE_MUTATION)
@@ -402,7 +404,7 @@ def register_message_tools(
 
             _require_confirmation("mass_send_by_openids", confirm)
             if not clientmsgid:
-                raise ValueError("mass_send_by_openids 必须提供 clientmsgid")
+                raise ToolError("mass_send_by_openids 必须提供 clientmsgid")
             return await client.mass_send_by_openids(
                 openid_list, message, clientmsgid
             )

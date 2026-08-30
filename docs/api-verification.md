@@ -261,3 +261,54 @@ publish_draft 本轮未重发（v1 已验证，重发会新增公开文章）。
 published 25 篇（2 条 v1 测试文章已删）、drafts 7 篇（真实草稿未动）、
 素材 image=68/voice=0/video=0（测试上传已删）、标签仅剩默认「星标组」、
 菜单无（46003）、用户备注已还原。
+
+## 阅读数据能力探针与错误透传修复（2026-08-30，第三次）
+
+用户问「能否获取阅读数」引出的专项探针（同一真实账号，MCP stdio +
+client 层直调），发现并修复两个缺陷。
+
+### 图文阅读数据可用性（真机实测）
+
+| report | 状态 | 返回内容 |
+| --- | --- | --- |
+| `getarticletotaldetail` | ✅ | 逐篇最全：`title`/`content_url`、`read_user`、`share_user`(转发)、`zaikan_user`(在看)、`like_user`、`comment_count`、`collection_user`(收藏)、`read_finish_rate`(完读率)、`read_avg_activetime`、`read_jump_position`、来源场景拆解，`detail_list` 按天滚动 |
+| `getarticleread` | ✅ | 逐篇当日 `read_user` + 8 种来源场景（推荐/搜一搜/朋友圈/主页/会话/公众号消息/其他/全部） |
+| `getarticleshare` | ✅ | 逐篇当日转发人数 |
+| `getusercumulate` | ✅ | 每日粉丝累计数（近 7 天） |
+| `getarticlesummary`、`getuserread`、`getuserreadhour`、`getusershare`、`getusersharehour` | ❌ | **errcode=47009 "this api is offline, please use the new api"**——旧系列图文接口已全局下线 |
+
+- 真实样本：freepublish 文章同样有统计（`getarticleread` 的 `msgid` 对应
+  文章 URL 里的 `mid_idx`，可与 `list_published` 对账）。
+- 口径限制：**T+1**，最早次日才能查到当日数据；实时阅读数官方 API 不提供。
+  三份报告时间跨度均限 1 天（begin_date == end_date）。
+
+### 修复 1：注册表移除 5 个已下线接口
+
+`DATACUBE_MAX_DAYS` 删除上述 5 个 report，本地直接拒绝并提示
+`report 不受支持`。回归测试 `test_b26_offline_datacube_reports_are_rejected`
+（修复前红：旧注册表仍接受这 5 个值）。
+
+### 修复 2：MCP 错误消息透传（缺陷影响全部 53+ 工具）
+
+**现象**：真实调用失败时调用方只看到 `Error executing tool X`，errcode、
+errmsg、endpoint、闸门拒绝理由全部不可见（探针中 47009 最初只能靠直调
+client 层才发现）。
+
+**根因**：mcp SDK 只把 `ToolError` 子类的消息放进
+`CallToolResult(is_error=True)`；其他异常一律按 crash 处理、掩码成通用
+消息（`tools/base.py` 的 `except Exception` 分支）。
+
+**修复**：`WechatError` 与 `ValidationError` 改为多继承 `ToolError`
+（保持 RuntimeError/ValueError 兼容），server 层闸门 `_require_confirmation`
+与两处 clientmsgid 检查改抛 `ToolError`。消息本身已经过脱敏，直达调用方
+安全。
+
+**验证**：`test_b27_wechat_error_details_reach_mcp_caller`、
+`test_b27_confirm_gate_reason_reaches_mcp_caller`（修复前红，traceback 即
+掩码现场 `UnexpectedToolError: Error executing tool delete_menu`）；真机
+stdio 复核：`get_current_menu` 返回
+`... errcode=46003 errmsg=menu no exist rid:...`，`getusershare` 返回
+`report 不受支持: getusershare`，正常数据路径不受影响。全套 pytest
+183 passed（181 + 3 新测试 − 1 个引用已下线接口的参数化用例）。
+
+附带收益：预期内的业务错误在 SDK 侧按 INFO 记录、不再打印 traceback。

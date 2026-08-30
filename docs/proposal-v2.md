@@ -31,7 +31,9 @@ v1 定位"发布通道"。v2 扩展为公众号官方服务器间 API 的全量 
 4. datacube 现行接口共 21 个（用户 2、图文 10、消息 7、接口分析 2）；
    `getarticletotal` 已停止维护（替代方向为"发表内容"新系列）→ 排除，
    **纳入 20 个**；数据统计向认证账号开放，个人主体预期 48001。
-   [清单已核对 2026-08-30；各接口时间跨度限制待实现时逐个核对]
+   [清单已核对 2026-08-30；各接口时间跨度限制待实现时逐个核对。
+   后续实测修正（2026-08-30）：个人主体 datacube 可用（无 48001）；
+   其中旧系列图文 5 个接口已全局下线（47009），实际注册 15 个，见 §3.3]
 5. `material/get_material`：图文素材返回 JSON（news_item）；视频返回 JSON
    （title/description/down_url）；**图片、语音直接返回二进制内容**。
    [已核对 2026-08-30]
@@ -61,15 +63,13 @@ v1 定位"发布通道"。v2 扩展为公众号官方服务器间 API 的全量 
 
 参数名刻意用 `material_type`/`media_type`，避免与 Python 内建 `type` 混淆。
 
-### 3.3 数据统计（1 个工具覆盖 20 个接口）
+### 3.3 数据统计（1 个工具覆盖 15 个接口）
 
 `get_statistics_report(report, begin_date, end_date)` → `POST /datacube/{report}`。
 
-`report` 为枚举，20 个值与官方接口一一对应：
+`report` 为枚举，15 个值与官方可用接口一一对应：
 
 - 用户：`getusersummary`、`getusercumulate`
-- 图文（旧系列）：`getarticlesummary`、`getuserread`、`getuserreadhour`、
-  `getusershare`、`getusersharehour`
 - 图文（发表内容新系列）：`getarticleread`、`getarticleshare`、
   `getbizsummary`、`getarticletotaldetail`
 - 消息：`getupstreammsg`、`getupstreammsghour`、`getupstreammsgweek`、
@@ -77,7 +77,13 @@ v1 定位"发布通道"。v2 扩展为公众号官方服务器间 API 的全量 
   `getupstreammsgdistmonth`
 - 接口分析：`getinterfacesummary`、`getinterfacesummaryhour`
 
-不拆 20 个工具的理由：接口完全同构（begin_date/end_date POST），拆开只
+旧系列图文接口（`getarticlesummary`、`getuserread`、`getuserreadhour`、
+`getusershare`、`getusersharehour`）原计划纳入，2026-08-30 真实账号实测
+已全局下线（errcode=47009 "this api is offline, please use the new
+api"），从注册表移除；阅读/转发数据由新系列接口提供，且为 T+1 口径
+（最早次日可查）。证据见 docs/api-verification.md。
+
+不拆 15 个工具的理由：接口完全同构（begin_date/end_date POST），拆开只
 膨胀 tools/list。每个 report 的**最大时间跨度表**本地维护、前置校验（表值
 以官方各接口详情页为准，见任务书查证项）。
 

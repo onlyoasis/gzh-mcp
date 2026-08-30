@@ -10,18 +10,20 @@ import re
 from typing import Any
 from urllib.parse import urlparse
 
+from mcp.server.mcpserver.exceptions import ToolError
+
 
 CONTENT_IMAGE_LIMIT = 1024 * 1024
 COVER_IMAGE_LIMIT = 10 * 1024 * 1024
 WECHAT_IMAGE_HOSTS = {"mmbiz.qpic.cn", "mmbiz.qlogo.cn"}
 DATACUBE_MAX_DAYS = {
+    # 旧系列图文接口（getarticlesummary/getuserread/getuserreadhour/
+    # getusershare/getusersharehour）已全局下线：2026-08-30 真实账号实测
+    # 一律返回 errcode=47009 "this api is offline, please use the new
+    # api"，故不在注册表中（新系列为 getarticleread/getarticleshare/
+    # getarticletotaldetail）。
     "getusersummary": 7,
     "getusercumulate": 7,
-    "getarticlesummary": 1,
-    "getuserread": 3,
-    "getuserreadhour": 1,
-    "getusershare": 7,
-    "getusersharehour": 1,
     "getarticleread": 1,
     "getarticleshare": 1,
     "getbizsummary": 1,
@@ -52,8 +54,8 @@ CUSTOM_MESSAGE_TYPES = {
 _DATE_PATTERN = re.compile(r"\d{4}-\d{2}-\d{2}")
 
 
-class ValidationError(ValueError):
-    pass
+class ValidationError(ValueError, ToolError):
+    """继承 ToolError 使拒绝理由直达 MCP 调用方（同 WechatError）。"""
 
 
 @dataclass(frozen=True)
