@@ -9,8 +9,10 @@ build/
 
 # 工具与缓存
 .pytest_cache/
+.coverage
 .ruff_cache/
 .mypy_cache/
+.uv-cache/
 
 # 编辑器
 .idea/

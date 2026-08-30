@@ -5,8 +5,8 @@
 
 ## 状态
 
-开发中。设计方案见 [docs/proposal.md](docs/proposal.md)（v1.0，已过 codex 5.6-sol
-独立评审，评审记录见 [docs/codex-review.md](docs/codex-review.md)）。
+v1 已实现。设计契约见 [docs/proposal.md](docs/proposal.md)，接口核对证据见
+[docs/api-verification.md](docs/api-verification.md)。
 
 ## 功能范围
 
@@ -32,7 +32,16 @@
 `check_credentials` 报 40164。发布接口（freepublish）仅认证账号可用，
 个人主体账号通常无此权限（errcode 48001）。
 
-## 安装与客户端配置（实现后生效）
+## 安装
+
+需要 Python 3.12+ 与 `uv`：
+
+```bash
+uv sync
+uv run pytest
+```
+
+## 客户端配置
 
 ```json
 {
@@ -54,7 +63,25 @@
 ```bash
 uv sync
 uv run pytest
+uv run pytest --cov=gzh_mcp --cov-report=term-missing
 ```
+
+`uv run gzh-mcp` 启动 stdio server。stdout 只用于 MCP JSON-RPC，诊断信息不得写入
+stdout。缺少 `WECHAT_APPID` 或 `WECHAT_SECRET` 时 server 会快速失败。
+
+## 工具
+
+默认注册：`check_credentials`、`upload_content_image`、
+`upload_cover_image`、`create_draft`、`get_draft`、`update_draft`、
+`list_drafts`、`get_publish_status`、`list_published`。
+
+只有 `GZH_MCP_ALLOW_PUBLISH=1` 或严格小写 `true` 时才注册 `publish_draft`；每次
+调用仍必须显式传 `confirm=true`。修改环境变量后需重启 MCP 客户端以刷新工具列表。
+
+`create_draft` 接收 `articles` 数组。每篇文章至少提供 `title`、HTML `content` 和
+普通图文所需的永久封面 `thumb_media_id`。创建后会自动调用 `draft/get`；若标题、
+图片数量或正文长度校验失败，结果返回 `verified=false`、`media_id` 和
+`verification_errors`，调用方应人工复核，不要直接发布。
 
 ## 已知约定
 
