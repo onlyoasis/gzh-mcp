@@ -84,7 +84,9 @@ async def test_b1_publish_tool_is_absent_for_non_strict_values(switch: str | Non
     server = create_server(client=client, environ=environ)
     async with Client(server) as mcp_client:
         tools = await mcp_client.list_tools()
-    assert {tool.name for tool in tools.tools} == EXPECTED_DEFAULT_TOOLS
+    names = {tool.name for tool in tools.tools}
+    assert EXPECTED_DEFAULT_TOOLS <= names
+    assert "publish_draft" not in names
 
 
 @pytest.mark.asyncio
@@ -95,7 +97,8 @@ async def test_b1_publish_tool_is_registered_for_strict_true(switch: str) -> Non
     )
     async with Client(server) as mcp_client:
         tools = await mcp_client.list_tools()
-    assert {tool.name for tool in tools.tools} == EXPECTED_DEFAULT_TOOLS | {"publish_draft"}
+    names = {tool.name for tool in tools.tools}
+    assert EXPECTED_DEFAULT_TOOLS | {"publish_draft"} <= names
 
 
 @pytest.mark.asyncio
@@ -156,4 +159,3 @@ def test_b9_stdio_stdout_contains_only_json_rpc() -> None:
     messages = [json.loads(line) for line in lines]
     assert messages[0]["jsonrpc"] == "2.0"
     assert messages[0]["id"] == 1
-

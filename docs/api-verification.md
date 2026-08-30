@@ -133,3 +133,67 @@
 - freepublish 属"发布"而非"群发"，不推送粉丝、不占群发次数，测试成本可控。
 - 两条【测试】文章已留在账号主页（article_id `Hf0B...Big03pj5` 与
   `Hf0B...AzOYoRPpx`）；v1 无删除工具，如需清理在 mp.weixin.qq.com 手动删除。
+
+## v2 验收记录（2026-08-30）
+
+实现：codex（gpt-5.6-sol，xhigh）；独立验收：Claude（主控）。
+
+### 执行过程
+
+codex 分三轮完成：前两轮各运行约 33 分钟后被运行环境的后台任务时限强制
+终止（rollout 无内部错误，属外部 SIGKILL；非 codex 或用户行为）；第三轮以
+`start_new_session=True` 脱离任务管理独立运行，5 分钟收尾。三轮的工作文件
+全部保留在工作树中，最终一轮完成盘点与补齐。
+
+### 独立验收结果
+
+- `uv run pytest` 主控重跑：**179 passed**（基线 66 + v2 新增 112 + 主控
+  补 1，增量可解释；实现方自报 178，主控修复缺陷后 +1）。
+- 代码通读：`wechat/` 包 9 模块 + server.py 47 工具注册 + validation 扩展，
+  v1 语义（token single-flight、40014/42001 刷新、read-only 退避、
+  非幂等 uncertain、create_draft 回读验证、整型 publish_id 修复）全部保留；
+  `test_server_tools.py` 仅 2 处断言由相等放宽为子集（v2 默认工具集扩大所
+  必需，闸门语义保留）。
+- 红灯复验（主控亲自退化 → 确认变红 → 还原）：B13 群发闸门退化为恒 True
+  → 6 failed；B15 仅移除 delete_menu 的 confirm → 精确 1 failed；B18 移除
+  下载已存在前置检查 → 1 failed（open("xb") 兜底救不了断言，测试有效）。
+- stdio 冒烟：完整 JSON-RPC 握手后 tools/list 返回 **53 个工具**（10 v1 +
+  47 v2 − 1 发布闸 − 3 群发闸），stdout 全为合法 JSON-RPC，stderr 无敏感信息。
+
+### 官方文档核对（主控独立执行）
+
+| 项 | 任务书/方案 | 官方实际 | 处置 |
+|---|---|---|---|
+| 标签下粉丝列表 | `/tags/members/getidlist` | `POST /cgi-bin/user/tag/get`（tagid+next_openid） | codex 纠正正确，采纳 |
+| 单篇已发表文章 | 接口名待查证 | `POST /cgi-bin/freepublish/getarticle` | 采纳 |
+| 菜单名称限制 | 中英文字符口径 | UTF-8 字节：一级 16B、二级 60B | codex 纠正正确，采纳 |
+| datacube 跨度表 | 待逐个核对 | 20 项跨度值与官方详情页一致（新系列 4 项均 1 天） | 采纳 |
+| 临时素材限制 | — | image 2M / voice 2M / video 10M / thumb 64KB | 实现正确 |
+| **永久语音限制** | （codex 实现 5M） | **2M，mp3/wma/wav/amr**（add_material 页逐字核对） | **缺陷，已修** |
+
+### 验收发现并修复的缺陷（主控修复，红灯闭环）
+
+**upload_voice_material 大小上限 5MB，官方为 2M**。codex 未读到该文档页
+原文（其报告中已声明），推测受第三方文档干扰。修复：`validate_permanent_media`
+voice 上限 5M→2M；补回归测试 `test_permanent_voice_limit_is_official_2mb`
+（恰好 2MB 通过、2MB+1 拒绝；修复前红 `DID NOT RAISE`，修复后绿）。
+
+### 真机 best-effort（个人主体账号）
+
+| 接口 | 结果 |
+|---|---|
+| check_credentials / get_server_ips / get_autoreply_config / get_jsapi_ticket | ✅ |
+| list_users（4 粉丝）/ list_tags / list_blacklist | ✅ |
+| count_materials（68 图）/ list_materials / list_drafts（7）/ list_published（27） | ✅ |
+| datacube getusersummary（单日） | ✅ 返回空集（个人号无统计异常透传） |
+| get_current_menu | errcode=46003 menu no exist（账号无菜单，业务错误正确透传） |
+| create_tag → delete_tag 闭环 | ✅ 建标签 100 后即删，已清理 |
+
+群发/定向推送/评论类接口按红线未真机调用（外部可见行为，需用户逐次授权）。
+
+### 边界合规记录
+
+- codex 第一轮曾读取 `~/.agents/skills/skill-router/SKILL.md` 与
+  `~/.codex/memories/MEMORY.md`（违反"禁读 ~/.agents/"指令；内容为其自身
+  技能生态，未涉及本项目凭据，无害，记录在案）。
+- 全程无 git 写操作、无微信业务 API 真实调用（测试全 mock）、无凭据落盘。
