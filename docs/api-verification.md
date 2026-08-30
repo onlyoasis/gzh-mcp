@@ -87,3 +87,49 @@
 - [上传发表内容中的图片](https://developers.weixin.qq.com/doc/service/api/material/permanent/api_uploadimage)
 - [新增永久素材](https://developers.weixin.qq.com/doc/service/api/material/permanent/api_addmaterial)
 
+
+## 真实账号全链路验收（2026-08-30）
+
+用另一项目（wewrite）配置的真实公众号凭据（仅注入子进程环境变量，不落盘），
+通过 MCP stdio 协议调用 `gzh-mcp` 进程，对 10 个工具逐一实测。发布动作经
+用户明确授权（`GZH_MCP_ALLOW_PUBLISH=1` + `confirm=true`）。
+
+### 结果
+
+| 工具 | 结果 |
+| --- | --- |
+| check_credentials | ✅ IP 白名单内，token 获取成功 |
+| upload_content_image | ✅ 返回 mmbiz.qpic.cn 正文图 URL |
+| upload_cover_image | ✅ 返回永久素材 media_id |
+| create_draft | ✅（修复 data-src 计数后 verified=true） |
+| get_draft | ✅（含 40007：草稿发布后被微信移除，属预期） |
+| update_draft | ✅ errcode=0，摘要更新生效 |
+| list_drafts | ✅ 附带 total_count |
+| publish_draft | ✅（修复整型 publish_id 后全链路成功） |
+| get_publish_status | ✅ publish_status=0 + article_id |
+| list_published | ✅ 两条测试文章可对账 |
+
+### 发现并修复的两个真实 bug
+
+1. **create_draft 回读验证误报**：微信保存草稿会把 `img` 的 `src` 归一化为
+   `data-src`（懒加载），回读正文里 `src` 消失，旧 `inspect_article_html`
+   只统计 `src`，导致所有带图文章 `verified=false`。修复：`src` 与
+   `data-src` 均计入图片计数。回归测试
+   `test_b11_create_draft_verified_when_wechat_rewrites_src_to_data_src`
+   （修复前红：`第 0 篇图片数量不一致 expected=1 actual=0`，与线上实测一致）。
+2. **publish_draft 整型 publish_id 误报失败**：`freepublish/submit` 实际返回
+   `"publish_id": 2247483949`（JSON 整数，`get_publish_status` 回显同为
+   整数）。旧代码只接受 str，抛「缺少 publish_id」——而文章实际已发布成功，
+   属最危险的"非幂等动作成功却报错"。修复：接受 `str | int`，统一转 str
+   返回；报错信息附带实际返回字段名。回归测试
+   `test_b12_publish_draft_accepts_integer_publish_id`（修复前红，错误与
+   线上一致）。
+
+### 其他实测结论
+
+- 发布成功的草稿会被微信从草稿箱移除，之后 `draft/get` 返回 40007
+  `invalid media_id`，调用方不应视为异常。
+- 该账号（个人主体）freepublish 可用，未出现 48001。
+- freepublish 属"发布"而非"群发"，不推送粉丝、不占群发次数，测试成本可控。
+- 两条【测试】文章已留在账号主页（article_id `Hf0B...Big03pj5` 与
+  `Hf0B...AzOYoRPpx`）；v1 无删除工具，如需清理在 mp.weixin.qq.com 手动删除。

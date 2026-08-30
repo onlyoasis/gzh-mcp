@@ -41,7 +41,15 @@ class _ArticleHTMLParser(HTMLParser):
         if lowered_tag == "script":
             self.has_script = True
         if lowered_tag == "img":
-            source = next((value for key, value in attrs if key.lower() == "src"), None)
+            # 微信保存草稿会把 src 归一化为 data-src（懒加载），两者都算图片。
+            source = next(
+                (
+                    value
+                    for key, value in attrs
+                    if key.lower() == "src" or key.lower() == "data-src"
+                ),
+                None,
+            )
             if source:
                 self.image_sources.append(source)
 

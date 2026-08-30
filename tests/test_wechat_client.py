@@ -280,6 +280,39 @@ async def test_b10_create_draft_sends_utf8_chinese_json_and_reads_back() -> None
 
 
 @pytest.mark.asyncio
+async def test_b11_create_draft_verified_when_wechat_rewrites_src_to_data_src() -> None:
+    """微信保存草稿会把 img 的 src 归一化为 data-src（懒加载），回读验证必须按同口径计数。
+
+    真实账号验收（2026-08-30）发现：回读正文只剩 data-src 时 image_count=0，
+    create_draft 对所有带图文章误报 verified=false。
+    """
+
+    article = valid_article()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/cgi-bin/stable_token":
+            return response({"access_token": TOKEN, "expires_in": 7200})
+        if request.url.path == "/cgi-bin/draft/add":
+            return response({"media_id": "draft-media-id"})
+        rewritten = {
+            **article,
+            "content": (
+                '<p>中文正文<img data-src="https://mmbiz.qpic.cn/a.png" '
+                'style="width:100%;"></p>'
+            ),
+        }
+        return response(draft_get_response(rewritten))
+
+    client = client_for(handler)
+    try:
+        result = await client.create_draft([article])
+    finally:
+        await client.aclose()
+
+    assert result == {"media_id": "draft-media-id", "verified": True}
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize("mismatch", ["title", "images", "content"])
 async def test_b4_create_draft_returns_media_id_with_verification_error(mismatch: str) -> None:
     article = valid_article(content='<p>' + "正文" * 100 + '<img src="https://mmbiz.qpic.cn/a.png"></p>')
@@ -485,3 +518,25 @@ async def test_publish_draft_returns_account_title_and_identifiers() -> None:
         "title": "中文标题",
         "appid_prefix": "wx1234",
     }
+
+
+@pytest.mark.asyncio
+async def test_b12_publish_draft_accepts_integer_publish_id() -> None:
+    """真实账号验收（2026-08-30）：submit 成功（文章已发布）但 publish_id 是整数时，
+    旧代码抛 WechatResponseError，导致「发布成功却被报错」的不确定状态。"""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/cgi-bin/stable_token":
+            return response({"access_token": TOKEN, "expires_in": 7200})
+        if request.url.path == "/cgi-bin/draft/get":
+            return response(draft_get_response(valid_article()))
+        assert request.url.path == "/cgi-bin/freepublish/submit"
+        return response({"publish_id": 100000233, "msg_data_id": 12345})
+
+    client = client_for(handler)
+    try:
+        result = await client.publish_draft("draft-id")
+    finally:
+        await client.aclose()
+    assert result["publish_id"] == "100000233"
+    assert result["msg_data_id"] == 12345

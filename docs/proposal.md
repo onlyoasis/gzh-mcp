@@ -135,7 +135,9 @@ idempotentHint/openWorldHint）如实填写，但仅作提示，不作为安全�
    - 发现 `<script>` → 报错
 2. **创建**：draft/add（JSON `ensure_ascii=False`，UTF-8）。
 3. **回读验证**：draft/get 回读，核对标题一致、图片数量一致、正文长度未异常
-   缩水；不符则报错并返回 media_id 供人工检查。
+   缩水；不符则报错并返回 media_id 供人工检查。图片计数口径：`img` 的 `src`
+   或 `data-src` 均计入（微信保存草稿会把 `src` 归一化为 `data-src`，
+   2026-08-30 真实账号验收发现，修复见 api-verification.md）。
 
 ### 4.4 技术栈
 

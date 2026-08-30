@@ -259,12 +259,20 @@ class WechatClient:
             uncertain_on_transport=True,
         )
         publish_id = published.get("publish_id")
-        if not isinstance(publish_id, str) or not publish_id:
+        # 微信可能返回整型 publish_id（2026-08-30 真实账号实测）；统一转字符串。
+        if (
+            isinstance(publish_id, bool)
+            or not isinstance(publish_id, (str, int))
+            or not str(publish_id).strip()
+        ):
             raise WechatResponseError(
-                "/freepublish/submit", "缺少 publish_id", self._secrets()
+                "/freepublish/submit",
+                f"缺少 publish_id（实际返回字段: {sorted(published.keys())}）",
+                self._secrets(),
             )
         return {
             **published,
+            "publish_id": str(publish_id),
             "media_id": media_id,
             "title": title,
             "appid_prefix": self.appid_prefix,
