@@ -6,8 +6,9 @@
 
 1. **stdout 只走 MCP JSON-RPC 协议**。任何日志/调试输出写 stderr，且必须先脱敏
    （access_token、WECHAT_SECRET 不得出现）。
-2. **发布动作双闸门不可绕过**：`GZH_MCP_ALLOW_PUBLISH` 严格真值（仅 `1`/`true`）
-   决定 publish_draft 是否注册；调用时必须显式 `confirm=true`。
+2. **发布/群发动作双闸门不可绕过**：`GZH_MCP_ALLOW_PUBLISH` 严格真值（仅 `1`/`true`）
+   决定 publish_draft 是否注册；`GZH_MCP_ALLOW_MASS_SEND`（v2，同一解析）决定
+   群发工具是否注册；两者调用时都必须显式 `confirm=true`（群发另强制 clientmsgid）。
 3. **非幂等接口不自动重试**：draft/add、freepublish/submit 网络超时一律返回
    "状态不确定"错误。只读接口可以一次有限退避。
 4. JSON 序列化微信接口请求体必须 `ensure_ascii=False` + UTF-8。
@@ -25,7 +26,8 @@ uv run gzh-mcp   # 启动 server（stdio，需要 WECHAT_APPID/WECHAT_SECRET）
 - 新增回归测试后必须验证：把修复退回、测试真的变红、再还原。没红灯过的回归
   测试不算数。
 - 预期数值与实测不符时，说明原因，不要改断言迁就实现。
-- 设计依据与官方文档核对记录在 docs/ 下，改接口行为先更新 docs/proposal.md。
+- 设计依据与官方文档核对记录在 docs/ 下，改接口行为先更新 docs/proposal.md
+  （v2 范围见 docs/proposal-v2.md）。
 
 ## 边界
 
