@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+
+# 工具与缓存
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# 编辑器
+.idea/
+.vscode/
+.DS_Store
+
+# 凭据（本项目凭据只走环境变量，此条为防御性兜底）
+.env
