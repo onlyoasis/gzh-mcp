@@ -44,9 +44,16 @@ class MenuMixin:
             payload={"button": buttons, "matchrule": match_rule},
         )
 
-    async def delete_conditional_menu(self, menu_id: str) -> dict[str, Any]:
+    async def delete_conditional_menu(self, menu_id: str | int) -> dict[str, Any]:
+        # menu/addconditional 实际返回整型 menuid（2026-08-30 真实账号实测），
+        # 与 publish_id 同理：接受整型并归一化为字符串。
+        if isinstance(menu_id, bool) or not isinstance(menu_id, (str, int)):
+            raise ValidationError("menu_id 必须是字符串或整数")
+        normalized = str(menu_id).strip()
+        if not normalized:
+            raise ValidationError("menu_id 不能为空")
         return await self._api_request(
-            "POST", "/menu/delconditional", payload={"menuid": menu_id}
+            "POST", "/menu/delconditional", payload={"menuid": normalized}
         )
 
     async def try_match_conditional_menu(self, user_id: str) -> dict[str, Any]:

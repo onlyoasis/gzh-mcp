@@ -322,3 +322,26 @@ async def test_b17_b19_b20_validation_happens_before_http(
     finally:
         await client.aclose()
     assert calls == 0
+
+
+@pytest.mark.asyncio
+async def test_b25_delete_conditional_menu_normalizes_integer_menu_id() -> None:
+    """整型 menuid（addconditional 实际返回）应归一化为字符串 payload；bool 拒绝。"""
+
+    captured: dict[str, Any] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["path"] = request.url.path
+        captured["payload"] = json.loads(request.content)
+        return response({"errcode": 0, "errmsg": "ok"})
+
+    client = client_for(handler)
+    try:
+        await client.delete_conditional_menu(425787302)
+    finally:
+        await client.aclose()
+    assert captured["path"] == "/cgi-bin/menu/delconditional"
+    assert captured["payload"] == {"menuid": "425787302"}
+
+    with pytest.raises(ValidationError):
+        await client.delete_conditional_menu(True)  # type: ignore[arg-type]

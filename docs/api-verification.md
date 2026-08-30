@@ -197,3 +197,67 @@ voice 上限 5M→2M；补回归测试 `test_permanent_voice_limit_is_official_2
   `~/.codex/memories/MEMORY.md`（违反"禁读 ~/.agents/"指令；内容为其自身
   技能生态，未涉及本项目凭据，无害，记录在案）。
 - 全程无 git 写操作、无微信业务 API 真实调用（测试全 mock）、无凭据落盘。
+
+## v2 真机全量验收（2026-08-30，第二次）
+
+承接上一节 mock 级验收，本次经用户授权用真实账号走 MCP stdio 协议对 v2 的
+53 个无闸门工具做全量真机验证（与 v1 验收同一凭据来源）。发布/群发闸门工具
+不注册（`tools/list` 恰为 53，与 stdio 冒烟一致）。
+
+### 直接真机调用：43 个工具全部符合预期
+
+- **用户/标签**：list_users（4 粉丝）、get_user_info、batch_get_user_info、
+  update_user_remark（设值→回读→还原）、create_tag、update_tag、tag_users、
+  get_user_ids_by_tag（回读到）、untag_users、delete_tag（含负闸门）、
+  list_tags、list_blacklist。
+- **素材**：count_materials、list_materials（image/voice）、get_material
+  （永久素材下载落盘 2090B）、upload_temp_media、download_temp_media（回环）、
+  upload_voice_material（16KB WAV）、upload_video_material（2.8KB MP4，经
+  ffmpeg 生成）、delete_material（语音/视频均即时删除）。
+- **草稿/发布**：list_drafts、list_published、get_published_article、
+  create_draft（thumb 为空被微信 40007 拒绝→换真实封面 verified=true）、
+  delete_draft（建删回环）、delete_published_article（负闸门 + 删除 2 篇
+  v1 遗留测试文章 + 对账删净）。
+- **菜单**：create_menu、get_current_menu、delete_menu、
+  create_conditional_menu、try_match_conditional_menu、
+  delete_conditional_menu（见下方修复）。
+- **统计/杂项**：get_statistics_report（6 个报告 + 跨度本地拦截）、
+  get_jsapi_ticket、get_autoreply_config、get_server_ips、check_credentials、
+  list_comments（该号可用，errcode 0，评论为空）、get_mass_status
+  （40059 业务错误透传）。
+- get_draft/update_draft/publish_draft 为 v1 已真机验证语义，v2 重构未改；
+  整型 publish_id 修复确认保留（wechat/publish.py）。
+
+### 发现并修复的 bug（第三个整型 ID 案例）
+
+**delete_conditional_menu 拒绝整型 menuid**：`menu/addconditional` 实际返回
+`"menuid": 425787302`（JSON 整数），工具参数声明为 str，agent 把 create 的
+返回原样回传给 delete 时被 pydantic `string_type` 拒绝，create→delete 自然
+工作流被打断。修复：server 参数与 client 方法接受 `int | str`，payload 归一化
+为字符串（与 publish_id 同模式）。回归测试 b25 两个（server 层整型入参、
+client 层 payload 归一化 + bool 拒绝），均先红后绿；修复后真机用整型
+menuid=425787305 完整走通建→匹配→删。
+
+### 微信业务规则实测记录（非 gzh-mcp 缺陷）
+
+| errcode | 场景 | 结论 |
+| --- | --- | --- |
+| 65303 | 无默认菜单时建个性化菜单 | 需先 create_menu |
+| 65320 | match_rule 用 sex 圈人 | sex/city/province 定向违反隐私限制，用 tag_id |
+| 65301 | 默认菜单删除后再删个性化菜单 | 删默认菜单会连带清掉个性化菜单 |
+| 48001 | create_qrcode | 该个人号无二维码权限，业务错误正确透传 |
+| 46003/40059/40007 | 无菜单 / 无效 msg_id / 无效 thumb | 业务错误透传正确 |
+
+### 红线未真机调用（12 个，需用户逐次授权）
+
+群发三件套（mass_send_by_tag / mass_send_by_openids / preview_mass_message，
+闸门未开即未注册）、send_custom_message、send_template_message、
+send_subscribe_message、blacklist_users、unblacklist_users（不碰真实粉丝）、
+mark_comment_elect / unmark_comment_elect（无真实评论可操作，且为公开状态）。
+publish_draft 本轮未重发（v1 已验证，重发会新增公开文章）。
+
+### 收尾状态（全部还原/清理）
+
+published 25 篇（2 条 v1 测试文章已删）、drafts 7 篇（真实草稿未动）、
+素材 image=68/voice=0/video=0（测试上传已删）、标签仅剩默认「星标组」、
+菜单无（46003）、用户备注已还原。

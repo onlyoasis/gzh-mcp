@@ -326,7 +326,7 @@ def register_menu_tools(server: MCPServer, client: Any) -> None:
 
     @server.tool(annotations=DESTRUCTIVE_MUTATION)
     async def delete_conditional_menu(
-        menu_id: str, confirm: bool = False
+        menu_id: int | str, confirm: bool = False
     ) -> dict[str, Any]:
         """删除个性化菜单；必须显式确认。"""
 

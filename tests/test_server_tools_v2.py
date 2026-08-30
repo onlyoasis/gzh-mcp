@@ -167,3 +167,19 @@ async def test_b16_direct_message_tools_require_confirmation_before_client_call(
         result = await mcp_client.call_tool(tool_name, arguments)
     assert result.is_error is True
     assert client.calls == []
+
+
+@pytest.mark.asyncio
+async def test_b25_delete_conditional_menu_accepts_integer_menu_id() -> None:
+    """真实账号实测（2026-08-30）：menu/addconditional 返回整型 menuid（425787302），
+    agent 原样回传 delete_conditional_menu 时被 str 参数声明拒绝（pydantic
+    string_type），create→delete 自然工作流被打断。"""
+
+    client = RecordingClient()
+    server = create_server(client=client, environ={})
+    async with Client(server) as mcp_client:
+        result = await mcp_client.call_tool(
+            "delete_conditional_menu", {"menu_id": 425787302, "confirm": True}
+        )
+    assert result.is_error is False
+    assert client.calls and client.calls[0][0] == "delete_conditional_menu"
