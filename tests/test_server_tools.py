@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import subprocess
 import sys
@@ -8,7 +9,7 @@ from typing import Any
 import pytest
 from mcp import Client
 
-from gzh_mcp.server import create_server
+from gzh_mcp.server import _configure_sensitive_loggers, create_server
 
 
 class FakeWechatClient:
@@ -52,6 +53,23 @@ class FakeWechatClient:
     async def list_published(self, offset: int, count: int) -> dict[str, object]:
         self.calls.append(("list_published", (offset, count)))
         return {"total_count": 0, "item_count": 0, "item": []}
+
+
+def test_sensitive_http_loggers_never_emit_access_token_urls() -> None:
+    httpx_logger = logging.getLogger("httpx")
+    httpcore_logger = logging.getLogger("httpcore")
+    previous_levels = (httpx_logger.level, httpcore_logger.level)
+    try:
+        httpx_logger.setLevel(logging.INFO)
+        httpcore_logger.setLevel(logging.DEBUG)
+
+        _configure_sensitive_loggers()
+
+        assert httpx_logger.level == logging.WARNING
+        assert httpcore_logger.level == logging.WARNING
+    finally:
+        httpx_logger.setLevel(previous_levels[0])
+        httpcore_logger.setLevel(previous_levels[1])
 
     async def publish_draft(self, media_id: str) -> dict[str, object]:
         self.calls.append(("publish_draft", (media_id,)))
@@ -159,3 +177,28 @@ def test_b9_stdio_stdout_contains_only_json_rpc() -> None:
     messages = [json.loads(line) for line in lines]
     assert messages[0]["jsonrpc"] == "2.0"
     assert messages[0]["id"] == 1
+
+
+def test_create_server_passes_only_explicit_proxy_to_wechat_client(monkeypatch) -> None:
+    captured: dict[str, object] = {}
+
+    class ProxyRecordingClient(FakeWechatClient):
+        def __init__(self, appid: str, secret: str, *, proxy: str | None = None) -> None:
+            super().__init__()
+            captured.update({"appid": appid, "secret": secret, "proxy": proxy})
+
+    monkeypatch.setattr("gzh_mcp.server.WechatClient", ProxyRecordingClient)
+    create_server(
+        environ={
+            "WECHAT_APPID": "wx-proxy-test",
+            "WECHAT_SECRET": "proxy-test-secret",
+            "HTTPS_PROXY": "http://ambient.invalid:9999",
+            "GZH_MCP_PROXY": "http://127.0.0.1:2080",
+        }
+    )
+
+    assert captured == {
+        "appid": "wx-proxy-test",
+        "secret": "proxy-test-secret",
+        "proxy": "http://127.0.0.1:2080",
+    }

@@ -82,6 +82,7 @@ ENDPOINT_CASES = [
     EndpointCase("mark_comment_elect", (123, 1, 456), path="/cgi-bin/comment/markelect", payload={"msg_data_id": 123, "index": 1, "user_comment_id": 456}),
     EndpointCase("unmark_comment_elect", (123, 1, 456), path="/cgi-bin/comment/unmarkelect", payload={"msg_data_id": 123, "index": 1, "user_comment_id": 456}),
     EndpointCase("mass_send_by_tag", (2, MASS_TEXT, "client-1"), path="/cgi-bin/message/mass/sendall", payload={"filter": {"is_to_all": False, "tag_id": 2}, "msgtype": "text", "text": {"content": "通知"}, "clientmsgid": "client-1"}),
+    EndpointCase("mass_send_all", (MASS_TEXT, "client-all"), path="/cgi-bin/message/mass/sendall", payload={"filter": {"is_to_all": True}, "msgtype": "text", "text": {"content": "通知"}, "clientmsgid": "client-all"}),
     EndpointCase("mass_send_by_openids", (["o1", "o2"], MASS_TEXT, "client-2"), path="/cgi-bin/message/mass/send", payload={"touser": ["o1", "o2"], "msgtype": "text", "text": {"content": "通知"}, "clientmsgid": "client-2"}),
     EndpointCase("preview_mass_message", ("openid", MASS_TEXT), path="/cgi-bin/message/mass/preview", payload={"touser": "openid", "msgtype": "text", "text": {"content": "通知"}}),
     EndpointCase("get_mass_status", (123,), path="/cgi-bin/message/mass/get", payload={"msg_id": 123}),
@@ -234,6 +235,7 @@ async def test_b18_binary_json_error_uses_four_layer_protocol(tmp_path: Path) ->
     "method_name,args",
     [
         ("mass_send_by_tag", (2, MASS_TEXT, "client-1")),
+        ("mass_send_all", (MASS_TEXT, "client-all")),
         ("mass_send_by_openids", (["o1"], MASS_TEXT, "client-2")),
         ("preview_mass_message", ("openid", MASS_TEXT)),
         ("send_custom_message", ("openid", CUSTOM_TEXT)),

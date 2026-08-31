@@ -60,10 +60,10 @@ Python CLI 里，只有 Claude Code 里的 wewrite skill 能用。目标：把**
 ### 3.3 草稿箱（draft）
 
 - `POST /cgi-bin/draft/add`：articles 数组，字段限制：
-  - `title` ≤ 32 字符（必填）
+  - `title` 必填；不在本地固化未经当前平台验证的长度上限
   - `digest`：**官方限制 128 字符**；本工具采用 ≤120 的保守业务限制
-  - `content`：HTML，< 2 万字符且 < 1M；会移除 JS；**外链图片会被过滤**，
-    正文图 url 必须来自 uploadimg
+  - `content`：非空 HTML；不按原始 HTML 字符数猜测平台正文上限；会移除 JS；
+    **外链图片会被过滤**，正文图 url 必须来自 uploadimg
   - `thumb_media_id`：news 必填（永久素材）
   - `article_type=newspic` 为图片帖（≤20 张图）
   - `need_open_comment` / `only_fans_can_comment`
@@ -130,7 +130,7 @@ idempotentHint/openWorldHint）如实填写，但仅作提示，不作为安全�
 ### 4.3 create_draft 的校验链
 
 1. **前置校验**（本地，发请求前）：
-   - title ≤ 32 字符、digest ≤ 120、content < 2 万字符
+   - title/content 非空、digest ≤ 120；title/content 长度由平台校验
    - 解析 HTML：发现外链图片 URL（非微信 uploadimg 域）→ 明确报错列出 URL
    - 发现 `<script>` → 报错
 2. **创建**：draft/add（JSON `ensure_ascii=False`，UTF-8）。
