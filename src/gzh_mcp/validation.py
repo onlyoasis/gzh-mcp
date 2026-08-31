@@ -127,8 +127,6 @@ def validate_article(article: dict[str, Any]) -> ArticleValidation:
     title = article.get("title")
     if not isinstance(title, str) or not title:
         raise ValidationError("title 必须是非空字符串")
-    if len(title) > 32:
-        raise ValidationError("title 不能超过 32 字符")
 
     content = article.get("content")
     if not isinstance(content, str) or not content:

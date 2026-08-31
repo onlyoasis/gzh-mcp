@@ -32,10 +32,17 @@ def valid_article(**overrides: object) -> dict[str, object]:
     return article
 
 
+def test_article_validation_accepts_platform_verified_39_character_title() -> None:
+    title = "题" * 22 + "AgentWorkflow2026"
+
+    assert len(title) == 39
+    assert len(title.encode("utf-8")) == 83
+    assert validate_article(valid_article(title=title)).image_count == 1
+
+
 @pytest.mark.parametrize(
     ("overrides", "message"),
     [
-        ({"title": "题" * 33}, "title 不能超过 32"),
         ({"digest": "摘" * 121}, "digest 不能超过 120"),
         ({"content": "文" * 20_000}, "content 必须少于 20000"),
         ({"content": '<img src="https://example.com/a.png">'}, "example.com/a.png"),
