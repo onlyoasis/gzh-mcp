@@ -34,6 +34,7 @@ class BaseWechatClient:
         secret: str,
         *,
         http_client: httpx.AsyncClient | None = None,
+        proxy: str | None = None,
         clock: Callable[[], float] = time.monotonic,
     ) -> None:
         if not appid:
@@ -44,6 +45,7 @@ class BaseWechatClient:
         self._secret = secret
         self._http = http_client or httpx.AsyncClient(
             timeout=httpx.Timeout(30.0, connect=10.0),
+            proxy=proxy,
             trust_env=False,
         )
         self._clock = clock

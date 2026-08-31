@@ -52,6 +52,22 @@ def valid_article(**overrides: object) -> dict[str, object]:
     return article
 
 
+def valid_newspic(**overrides: object) -> dict[str, object]:
+    article: dict[str, object] = {
+        "article_type": "newspic",
+        "title": "图片帖标题",
+        "content": "图片帖说明",
+        "image_info": {
+            "image_list": [
+                {"image_media_id": "image-media-1"},
+                {"image_media_id": "image-media-2"},
+            ]
+        },
+    }
+    article.update(overrides)
+    return article
+
+
 def draft_get_response(article: dict[str, object]) -> dict[str, Any]:
     return {
         "news_item": [article],
@@ -310,6 +326,53 @@ async def test_b11_create_draft_verified_when_wechat_rewrites_src_to_data_src() 
         await client.aclose()
 
     assert result == {"media_id": "draft-media-id", "verified": True}
+
+
+@pytest.mark.asyncio
+async def test_create_newspic_verifies_image_info_readback() -> None:
+    article = valid_newspic()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/cgi-bin/stable_token":
+            return response({"access_token": TOKEN, "expires_in": 7200})
+        if request.url.path == "/cgi-bin/draft/add":
+            return response({"media_id": "newspic-draft-id"})
+        return response(draft_get_response(article))
+
+    client = client_for(handler)
+    try:
+        result = await client.create_draft([article])
+    finally:
+        await client.aclose()
+
+    assert result == {"media_id": "newspic-draft-id", "verified": True}
+
+
+@pytest.mark.asyncio
+async def test_create_newspic_reports_readback_image_count_mismatch() -> None:
+    article = valid_newspic()
+    readback = valid_newspic(
+        image_info={"image_list": [{"image_media_id": "image-media-1"}]}
+    )
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/cgi-bin/stable_token":
+            return response({"access_token": TOKEN, "expires_in": 7200})
+        if request.url.path == "/cgi-bin/draft/add":
+            return response({"media_id": "newspic-draft-id"})
+        return response(draft_get_response(readback))
+
+    client = client_for(handler)
+    try:
+        result = await client.create_draft([article])
+    finally:
+        await client.aclose()
+
+    assert result["media_id"] == "newspic-draft-id"
+    assert result["verified"] is False
+    assert result["verification_errors"] == [
+        "第 0 篇图片数量不一致 expected=2 actual=1"
+    ]
 
 
 @pytest.mark.asyncio

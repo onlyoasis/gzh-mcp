@@ -9,6 +9,22 @@ from .user import _validate_openid_list
 
 
 class MessageMixin:
+    async def mass_send_all(
+        self, message: dict[str, Any], clientmsgid: str
+    ) -> dict[str, Any]:
+        validate_message(message, kind="mass")
+        self._validate_clientmsgid(clientmsgid)
+        return await self._api_request(
+            "POST",
+            "/message/mass/sendall",
+            payload={
+                "filter": {"is_to_all": True},
+                **message,
+                "clientmsgid": clientmsgid,
+            },
+            uncertain_on_transport=True,
+        )
+
     async def mass_send_by_tag(
         self, tag_id: int, message: dict[str, Any], clientmsgid: str
     ) -> dict[str, Any]:
