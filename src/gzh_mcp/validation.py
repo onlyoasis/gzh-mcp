@@ -130,17 +130,35 @@ def validate_article(article: dict[str, Any]) -> ArticleValidation:
     if len(title) > 32:
         raise ValidationError("title 不能超过 32 字符")
 
+    content = article.get("content")
+    if not isinstance(content, str) or not content:
+        raise ValidationError("content 必须是非空字符串")
+    if len(content) >= 20_000:
+        raise ValidationError("content 必须少于 20000 字符")
+
+    if article.get("article_type") == "newspic":
+        image_info = article.get("image_info")
+        image_list = image_info.get("image_list") if isinstance(image_info, dict) else None
+        if not isinstance(image_list, list):
+            raise ValidationError("newspic image_info.image_list 必须是数组")
+        if not image_list:
+            raise ValidationError("newspic 至少需要 1 张图片")
+        if len(image_list) > 20:
+            raise ValidationError("newspic 不能超过 20 张图片")
+        for index, image in enumerate(image_list):
+            media_id = image.get("image_media_id") if isinstance(image, dict) else None
+            if not isinstance(media_id, str) or not media_id:
+                raise ValidationError(
+                    f"newspic image_list[{index}].image_media_id 必须是非空字符串"
+                )
+        return ArticleValidation(image_count=len(image_list))
+
     digest = article.get("digest", "")
     if not isinstance(digest, str):
         raise ValidationError("digest 必须是字符串")
     if len(digest) > 120:
         raise ValidationError("digest 不能超过 120 字符")
 
-    content = article.get("content")
-    if not isinstance(content, str) or not content:
-        raise ValidationError("content 必须是非空字符串")
-    if len(content) >= 20_000:
-        raise ValidationError("content 必须少于 20000 字符")
     return inspect_article_html(content)
 
 

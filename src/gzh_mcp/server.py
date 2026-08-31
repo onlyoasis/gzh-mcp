@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 from collections.abc import Mapping
 from typing import Any
@@ -378,6 +379,19 @@ def register_message_tools(
     if mass_send_enabled:
 
         @server.tool(annotations=DESTRUCTIVE_MUTATION)
+        async def mass_send_all(
+            message: dict[str, Any],
+            clientmsgid: str,
+            confirm: bool = False,
+        ) -> dict[str, Any]:
+            """向全部关注者群发；必须提供 clientmsgid 并显式确认。"""
+
+            _require_confirmation("mass_send_all", confirm)
+            if not clientmsgid:
+                raise ToolError("mass_send_all 必须提供 clientmsgid")
+            return await client.mass_send_all(message, clientmsgid)
+
+        @server.tool(annotations=DESTRUCTIVE_MUTATION)
         async def mass_send_by_tag(
             tag_id: int,
             message: dict[str, Any],
@@ -519,7 +533,9 @@ def create_server(
 ) -> MCPServer:
     environment = os.environ if environ is None else environ
     active_client = client or WechatClient(
-        environment.get("WECHAT_APPID", ""), environment.get("WECHAT_SECRET", "")
+        environment.get("WECHAT_APPID", ""),
+        environment.get("WECHAT_SECRET", ""),
+        proxy=environment.get("GZH_MCP_PROXY") or None,
     )
     server = MCPServer("gzh-mcp")
     register_v1_tools(
@@ -546,7 +562,13 @@ def create_server(
     return server
 
 
+def _configure_sensitive_loggers() -> None:
+    for logger_name in ("httpx", "httpcore"):
+        logging.getLogger(logger_name).setLevel(logging.WARNING)
+
+
 def main() -> None:
+    _configure_sensitive_loggers()
     create_server().run(transport="stdio")
 
 

@@ -45,6 +45,7 @@ NEW_TOOLS = {
     "mark_comment_elect",
     "unmark_comment_elect",
     "mass_send_by_tag",
+    "mass_send_all",
     "mass_send_by_openids",
     "preview_mass_message",
     "get_mass_status",
@@ -60,6 +61,7 @@ NEW_TOOLS = {
 
 MASS_GATED_TOOLS = {
     "mass_send_by_tag",
+    "mass_send_all",
     "mass_send_by_openids",
     "preview_mass_message",
 }
@@ -101,7 +103,7 @@ async def test_b13_mass_tools_are_absent_for_non_strict_values(
 async def test_b13_mass_tools_are_registered_for_strict_true(switch: str) -> None:
     names = await listed_tool_names({"GZH_MCP_ALLOW_MASS_SEND": switch})
     assert NEW_TOOLS <= names
-    assert len(NEW_TOOLS & names) == 47
+    assert len(NEW_TOOLS & names) == 48
 
 
 @pytest.mark.asyncio
@@ -110,6 +112,8 @@ async def test_b13_mass_tools_are_registered_for_strict_true(switch: str) -> Non
     [
         ("mass_send_by_tag", {"tag_id": 2, "message": {"msgtype": "text", "text": {"content": "x"}}, "confirm": True}),
         ("mass_send_by_tag", {"tag_id": 2, "message": {"msgtype": "text", "text": {"content": "x"}}, "clientmsgid": "client", "confirm": False}),
+        ("mass_send_all", {"message": {"msgtype": "text", "text": {"content": "x"}}, "confirm": True}),
+        ("mass_send_all", {"message": {"msgtype": "text", "text": {"content": "x"}}, "clientmsgid": "client", "confirm": False}),
         ("mass_send_by_openids", {"openid_list": ["o1"], "message": {"msgtype": "text", "text": {"content": "x"}}, "confirm": True}),
         ("mass_send_by_openids", {"openid_list": ["o1"], "message": {"msgtype": "text", "text": {"content": "x"}}, "clientmsgid": "client", "confirm": False}),
     ],

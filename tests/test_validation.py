@@ -59,6 +59,55 @@ def test_article_validation_returns_image_count() -> None:
     assert validate_article(article).image_count == 2
 
 
+def valid_newspic(**overrides: object) -> dict[str, object]:
+    article: dict[str, object] = {
+        "article_type": "newspic",
+        "title": "图片帖标题",
+        "content": "图片帖说明",
+        "image_info": {
+            "image_list": [
+                {"image_media_id": "image-media-1"},
+                {"image_media_id": "image-media-2"},
+            ]
+        },
+    }
+    article.update(overrides)
+    return article
+
+
+def test_newspic_validation_returns_permanent_image_count() -> None:
+    assert validate_article(valid_newspic()).image_count == 2
+
+
+@pytest.mark.parametrize(
+    ("overrides", "message"),
+    [
+        ({"content": ""}, "content 必须是非空字符串"),
+        ({"image_info": {}}, "image_list"),
+        ({"image_info": {"image_list": []}}, "至少需要 1 张图片"),
+        (
+            {
+                "image_info": {
+                    "image_list": [
+                        {"image_media_id": f"image-{index}"} for index in range(21)
+                    ]
+                }
+            },
+            "不能超过 20 张图片",
+        ),
+        (
+            {"image_info": {"image_list": [{"image_media_id": ""}]}},
+            "image_media_id",
+        ),
+    ],
+)
+def test_newspic_validation_rejects_invalid_image_contract(
+    overrides: dict[str, object], message: str
+) -> None:
+    with pytest.raises(ValidationError, match=message):
+        validate_article(valid_newspic(**overrides))
+
+
 def write_image(path: Path, header: bytes, size: int | None = None) -> Path:
     payload = header + b"image"
     if size is not None:
@@ -109,4 +158,3 @@ def test_cover_image_supports_official_permanent_material_formats(
 ) -> None:
     path = write_image(tmp_path / "cover.bin", header)
     assert validate_cover_image(path).mime_type == mime_type
-

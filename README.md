@@ -5,7 +5,7 @@
 工具，供本机 MCP 客户端（Claude Code、Codex CLI 等）调用。
 
 - 不做排版：`create_draft` 接受 HTML，Markdown → 微信 HTML 由调用方完成。
-- 完整启用后共 57 个工具；自动发布和群发分别受独立环境变量控制。
+- 完整启用后共 58 个工具；自动发布和群发分别受独立环境变量控制。
 - 不持久化业务状态；只有下载工具会按调用方指定的路径写文件，且拒绝覆盖。
 - 凭据只从环境变量注入，错误信息中的 secret 和 access token 会脱敏。
 
@@ -20,7 +20,7 @@
 | 用户与标签（14） | `list_users`、`get_user_info`、`batch_get_user_info`、`update_user_remark`、`create_tag`、`list_tags`、`update_tag`、`delete_tag`、`get_user_ids_by_tag`、`tag_users`、`untag_users`、`list_blacklist`、`blacklist_users`、`unblacklist_users` | 默认注册；删除标签需确认 |
 | 菜单（6） | `create_menu`、`get_current_menu`、`delete_menu`、`create_conditional_menu`、`delete_conditional_menu`、`try_match_conditional_menu` | 默认注册；删除需确认 |
 | 评论（3） | `list_comments`、`mark_comment_elect`、`unmark_comment_elect` | 默认注册 |
-| 群发（5） | `mass_send_by_tag`、`mass_send_by_openids`、`preview_mass_message`、`get_mass_status`、`delete_mass_message` | 前 3 个需开启群发闸门；发送还需 `clientmsgid` 与确认；状态查询和删除默认注册 |
+| 群发（6） | `mass_send_all`、`mass_send_by_tag`、`mass_send_by_openids`、`preview_mass_message`、`get_mass_status`、`delete_mass_message` | 前 4 个需开启群发闸门；发送还需 `clientmsgid` 与确认；状态查询和删除默认注册 |
 | 定向推送（3） | `send_custom_message`、`send_template_message`、`send_subscribe_message` | 默认注册；每次发送需 `confirm=true` |
 | 杂项（4） | `create_qrcode`、`get_jsapi_ticket`、`get_autoreply_config`、`get_server_ips` | 默认注册 |
 
@@ -37,8 +37,9 @@
 2. **确认闸门（每次调用）**：`publish_draft` 必须显式传 `confirm=true`，
    否则直接拒绝，不发出任何 HTTP 请求。
 3. **群发双闸门**：`GZH_MCP_ALLOW_MASS_SEND` 必须严格为 `1` 或小写 `true`，
-   `mass_send_by_tag`、`mass_send_by_openids`、`preview_mass_message` 才注册；前两者
-   还必须传非空 `clientmsgid` 和 `confirm=true`。
+   `mass_send_all`、`mass_send_by_tag`、`mass_send_by_openids`、
+   `preview_mass_message` 才注册；前三者还必须传非空 `clientmsgid` 和
+   `confirm=true`。
 4. **逐次确认**：删除类工具以及客服、模板、订阅通知发送工具必须显式传
    `confirm=true`；校验失败不会发 HTTP 请求。
 
@@ -53,6 +54,8 @@
   `<script>`、超长标题/摘要/正文；图片按文件魔数校验真实格式。
 - 创建草稿后自动回读验证（标题、图片数、正文长度），微信清洗了内容时
   返回 `verified=false` + 差异详情，不静默成功。
+- `create_draft` 同时校验普通图文和 `article_type=newspic` 图片帖；图片帖要求
+  1–20 个非空 `image_media_id`，回读时核对图片数。
 - 发布结果带脱敏 appid 前缀、草稿标题、media_id，便于调用方核对目标账号。
 
 ## 前置要求
@@ -86,6 +89,7 @@ MCP 客户端的 stdio server 配置（JSON）：
       "env": {
         "WECHAT_APPID": "<你的 AppID>",
         "WECHAT_SECRET": "<你的 AppSecret>",
+        "GZH_MCP_PROXY": "http://127.0.0.1:2080",
         "GZH_MCP_ALLOW_PUBLISH": "0",
         "GZH_MCP_ALLOW_MASS_SEND": "0"
       }
@@ -109,8 +113,9 @@ claude mcp add gzh -s user \
 |---|---|---|
 | `WECHAT_APPID` | 是 | 公众号 AppID |
 | `WECHAT_SECRET` | 是 | AppSecret，仅经环境变量注入，不落任何文件 |
+| `GZH_MCP_PROXY` | 否 | 显式 HTTP(S) 代理；server 不继承宿主代理环境，适用于固定出口 IP 白名单 |
 | `GZH_MCP_ALLOW_PUBLISH` | 否 | `1`/`true` 注册 `publish_draft`；其余值一律视为关闭 |
-| `GZH_MCP_ALLOW_MASS_SEND` | 否 | `1`/`true` 注册 3 个群发发送/预览工具；其余值一律视为关闭 |
+| `GZH_MCP_ALLOW_MASS_SEND` | 否 | `1`/`true` 注册 4 个群发发送/预览工具；其余值一律视为关闭 |
 
 ## 典型工作流
 

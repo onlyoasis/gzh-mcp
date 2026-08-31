@@ -43,6 +43,22 @@ class DraftMixin:
                 continue
             if actual.get("title") != source["title"]:
                 verification_errors.append(f"第 {index} 篇标题不一致")
+            if source.get("article_type") == "newspic":
+                actual_image_info = actual.get("image_info")
+                actual_image_list = (
+                    actual_image_info.get("image_list")
+                    if isinstance(actual_image_info, dict)
+                    else None
+                )
+                actual_images = (
+                    len(actual_image_list) if isinstance(actual_image_list, list) else -1
+                )
+                if actual_images != source_validation.image_count:
+                    verification_errors.append(
+                        f"第 {index} 篇图片数量不一致 "
+                        f"expected={source_validation.image_count} actual={actual_images}"
+                    )
+                continue
             actual_content = actual.get("content")
             if not isinstance(actual_content, str):
                 verification_errors.append(f"第 {index} 篇回读正文缺失")
