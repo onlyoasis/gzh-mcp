@@ -60,7 +60,7 @@ Python CLI 里，只有 Claude Code 里的 wewrite skill 能用。目标：把**
 ### 3.3 草稿箱（draft）
 
 - `POST /cgi-bin/draft/add`：articles 数组，字段限制：
-  - `title` ≤ 32 字符（必填）
+  - `title` 必填；不在本地固化未经当前平台验证的长度上限
   - `digest`：**官方限制 128 字符**；本工具采用 ≤120 的保守业务限制
   - `content`：HTML，< 2 万字符且 < 1M；会移除 JS；**外链图片会被过滤**，
     正文图 url 必须来自 uploadimg
