@@ -244,7 +244,6 @@ async def test_b8_error_redacts_token_secret_and_query_values() -> None:
     "overrides",
     [
         {"digest": "摘" * 121},
-        {"content": "文" * 20_000},
         {"content": '<img src="https://example.com/a.png">'},
         {"content": "<script>alert(1)</script>"},
     ],

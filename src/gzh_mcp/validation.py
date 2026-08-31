@@ -131,8 +131,6 @@ def validate_article(article: dict[str, Any]) -> ArticleValidation:
     content = article.get("content")
     if not isinstance(content, str) or not content:
         raise ValidationError("content 必须是非空字符串")
-    if len(content) >= 20_000:
-        raise ValidationError("content 必须少于 20000 字符")
 
     if article.get("article_type") == "newspic":
         image_info = article.get("image_info")
