@@ -40,11 +40,21 @@ def test_article_validation_accepts_platform_verified_39_character_title() -> No
     assert validate_article(valid_article(title=title)).image_count == 1
 
 
+def test_article_validation_accepts_platform_verified_html_over_20000_chars() -> None:
+    content = (
+        '<section style="'
+        + "margin:0;" * 2400
+        + '">正文<img src="https://mmbiz.qpic.cn/example.png"></section>'
+    )
+
+    assert len(content) > 20_000
+    assert validate_article(valid_article(content=content)).image_count == 1
+
+
 @pytest.mark.parametrize(
     ("overrides", "message"),
     [
         ({"digest": "摘" * 121}, "digest 不能超过 120"),
-        ({"content": "文" * 20_000}, "content 必须少于 20000"),
         ({"content": '<img src="https://example.com/a.png">'}, "example.com/a.png"),
         ({"content": "<SCRIPT>alert(1)</SCRIPT>"}, "script"),
     ],
