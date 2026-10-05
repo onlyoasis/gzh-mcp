@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>gzh-mcp 使用手册 · 微信公众号管理 MCP</title>
+<style>
+  :root {
+    --canvas: #FBFBFA;
+    --surface: #FFFFFF;
+    --surface-warm: #F7F6F3;
+    --ink: #111111;
+    --ink-soft: #2F3437;
+    --muted: #787774;
+    --line: #EAEAEA;
+    --pale-red-bg: #FDEBEC;   --pale-red-tx: #9F2F2D;
+    --pale-blue-bg: #E1F3FE;  --pale-blue-tx: #1F6C9F;
+    --pale-green-bg: #EDF3EC; --pale-green-tx: #346538;
+    --pale-yellow-bg: #FBF3DB;--pale-yellow-tx: #956400;
+    --code-bg: #201F1D;
+    --code-tx: #E8E6E1;
+    --sans: 'SF Pro Display', 'Helvetica Neue', -apple-system, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+    --serif: 'Lyon Text', 'Newsreader', 'Songti SC', 'Noto Serif SC', Georgia, serif;
+    --mono: 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--canvas);
+    color: var(--ink-soft);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; }
+
+  /* ---------- 顶部导航 ---------- */
+  nav {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(251, 251, 250, 0.92);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav-inner {
+    max-width: 1080px; margin: 0 auto; padding: 14px 32px;
+    display: flex; align-items: center; gap: 28px;
+  }
+  .brand {
+    font-family: var(--mono); font-size: 14px; font-weight: 600;
+    color: var(--ink); text-decoration: none; letter-spacing: -0.01em;
+  }
+  .brand::before {
+    content: ""; display: inline-block; width: 8px; height: 8px;
+    background: var(--ink); margin-right: 10px; transform: translateY(-1px);
+  }
+  .nav-links { display: flex; gap: 22px; margin-left: auto; flex-wrap: wrap; }
+  .nav-links a {
+    font-size: 13px; color: var(--muted); text-decoration: none;
+    transition: color 160ms ease;
+  }
+  .nav-links a:hover { color: var(--ink); }
+
+  main { max-width: 1080px; margin: 0 auto; padding: 0 32px; }
+
+  /* ---------- 首屏 ---------- */
+  header.hero { padding: 104px 0 72px; position: relative; }
+  .hero-badges { display: flex; gap: 10px; margin-bottom: 28px; flex-wrap: wrap; }
+  .badge {
+    font-family: var(--mono); font-size: 11px; text-transform: uppercase;
+    letter-spacing: 0.08em; padding: 5px 12px; border-radius: 9999px;
+  }
+  .badge.blue  { background: var(--pale-blue-bg);   color: var(--pale-blue-tx); }
+  .badge.green { background: var(--pale-green-bg);  color: var(--pale-green-tx); }
+  .badge.red   { background: var(--pale-red-bg);    color: var(--pale-red-tx); }
+  .badge.yellow{ background: var(--pale-yellow-bg); color: var(--pale-yellow-tx); }
+  h1 {
+    font-family: var(--serif); font-weight: 400; color: var(--ink);
+    font-size: clamp(38px, 5.4vw, 58px); line-height: 1.12;
+    letter-spacing: -0.03em; max-width: 760px;
+  }
+  .hero p.lede {
+    margin-top: 26px; max-width: 640px; font-size: 17px; color: var(--muted);
+  }
+  .principles {
+    margin-top: 56px; display: grid;
+    grid-template-columns: repeat(4, 1fr); gap: 1px;
+    background: var(--line); border: 1px solid var(--line);
+    border-radius: 12px; overflow: hidden;
+  }
+  .principle { background: var(--surface); padding: 26px 24px; }
+  .principle .num {
+    font-family: var(--mono); font-size: 11px; color: var(--muted);
+    letter-spacing: 0.08em; display: block; margin-bottom: 12px;
+  }
+  .principle h3 { font-size: 15px; color: var(--ink); margin-bottom: 8px; font-weight: 600; }
+  .principle p  { font-size: 13px; color: var(--muted); line-height: 1.65; }
+
+  /* ---------- 章节骨架 ---------- */
+  section { padding: 72px 0 8px; }
+  .sec-head { display: flex; align-items: baseline; gap: 18px; margin-bottom: 36px; }
+  .sec-no {
+    font-family: var(--mono); font-size: 13px; color: var(--muted);
+    letter-spacing: 0.06em;
+  }
+  h2 {
+    font-family: var(--serif); font-weight: 400; color: var(--ink);
+    font-size: 30px; letter-spacing: -0.02em; line-height: 1.2;
+  }
+  .sec-desc { color: var(--muted); max-width: 660px; margin: -22px 0 34px; font-size: 15px; }
+
+  /* ---------- 代码块 ---------- */
+  .window { border-radius: 10px; overflow: hidden; border: 1px solid #35342F; margin: 6px 0 10px; }
+  .window-bar {
+    background: #2B2A26; padding: 10px 16px;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .window-bar i { width: 9px; height: 9px; border-radius: 50%; background: #57554E; }
+  .window-bar span {
+    margin-left: 8px; font-family: var(--mono); font-size: 11px; color: #8A877E;
+  }
+  pre {
+    background: var(--code-bg); color: var(--code-tx);
+    font-family: var(--mono); font-size: 13px; line-height: 1.75;
+    padding: 20px 22px; overflow-x: auto;
+  }
+  pre .c { color: #8A877E; }
+  pre .k { color: #D9C589; }
+  pre .s { color: #A8C5B4; }
+  code.inline {
+    font-family: var(--mono); font-size: 0.86em;
+    background: var(--surface-warm); border: 1px solid var(--line);
+    border-radius: 4px; padding: 1px 6px; color: var(--ink);
+  }
+
+  /* ---------- 表格 ---------- */
+  table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .table-wrap { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .table-wrap table { border: none; border-radius: 0; }
+  th {
+    text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--muted); font-weight: 600; background: var(--surface-warm);
+    padding: 12px 18px; border-bottom: 1px solid var(--line);
+  }
+  td { padding: 13px 18px; border-bottom: 1px solid var(--line); font-size: 14px; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  tbody tr { transition: background 160ms ease; }
+  tbody tr:hover { background: #FCFCFB; }
+  td code, th code { font-family: var(--mono); font-size: 13px; }
+
+  /* ---------- 卡片网格 ---------- */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 12px; padding: 28px;
+    transition: box-shadow 200ms ease;
+  }
+  .card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+  .card h3 { font-size: 16px; color: var(--ink); font-weight: 600; margin-bottom: 10px; }
+  .card p, .card li { font-size: 14px; color: var(--muted); line-height: 1.7; }
+  .card ul { list-style: none; }
+  .card ul li { padding-left: 18px; position: relative; margin-bottom: 7px; }
+  .card ul li::before {
+    content: ""; position: absolute; left: 0; top: 10px;
+    width: 6px; height: 6px; background: var(--line);
+  }
+  .card ul li::before { background: #D8D6CF; }
+
+  /* ---------- 工具清单 ---------- */
+  .tools-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .tool-card {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 12px; padding: 24px 26px;
+    transition: box-shadow 200ms ease;
+  }
+  .tool-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+  .tool-card .head { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+  .tool-card h3 { font-size: 15px; font-weight: 600; color: var(--ink); }
+  .tool-card .count {
+    font-family: var(--mono); font-size: 11px; color: var(--muted);
+    margin-left: auto; white-space: nowrap;
+  }
+  .tool-card .rule { font-size: 13px; color: var(--muted); margin-bottom: 14px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    font-family: var(--mono); font-size: 12px; color: var(--ink-soft);
+    background: var(--surface-warm); border: 1px solid var(--line);
+    border-radius: 5px; padding: 3px 9px;
+  }
+  .chip.gated { border-style: dashed; color: var(--pale-red-tx); background: var(--pale-red-bg); }
+
+  /* ---------- 工作流 ---------- */
+  .flow { border-top: 1px solid var(--line); }
+  .flow-step {
+    display: grid; grid-template-columns: 52px 300px 1fr; gap: 20px;
+    padding: 20px 0; border-bottom: 1px solid var(--line); align-items: baseline;
+  }
+  .flow-step .n {
+    font-family: var(--mono); font-size: 13px; color: var(--muted);
+  }
+  .flow-step .tool { font-family: var(--mono); font-size: 13.5px; color: var(--ink); }
+  .flow-step .what { font-size: 14px; color: var(--muted); }
+  .flow-step .what code { font-family: var(--mono); font-size: 12.5px; color: var(--pale-blue-tx); background: var(--pale-blue-bg); border-radius: 4px; padding: 0 5px; }
+
+  /* ---------- 规则清单（正文 HTML） ---------- */
+  .rule-row {
+    display: grid; grid-template-columns: 44px 1fr; gap: 18px;
+    padding: 22px 0; border-bottom: 1px solid var(--line);
+  }
+  .rule-row .mark {
+    width: 26px; height: 26px; border-radius: 6px; margin-top: 2px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 13px; font-weight: 700;
+  }
+  .mark.no  { background: var(--pale-red-bg);    color: var(--pale-red-tx); }
+  .mark.ok  { background: var(--pale-green-bg);  color: var(--pale-green-tx); }
+  .rule-row h3 { font-size: 15px; color: var(--ink); font-weight: 600; margin-bottom: 6px; }
+  .rule-row p { font-size: 14px; color: var(--muted); max-width: 720px; }
+  .rule-row p + p { margin-top: 6px; }
+
+  /* ---------- 提示条 ---------- */
+  .note {
+    border: 1px solid var(--line); border-left: 3px solid var(--ink);
+    background: var(--surface); border-radius: 0 10px 10px 0;
+    padding: 18px 22px; margin: 26px 0; font-size: 14px; color: var(--muted);
+    max-width: 780px;
+  }
+  .note strong { color: var(--ink); font-weight: 600; }
+  .note.warn { border-left-color: var(--pale-yellow-tx); }
+
+  /* ---------- 页脚 ---------- */
+  footer {
+    margin-top: 96px; border-top: 1px solid var(--line);
+    padding: 40px 0 64px;
+  }
+  .foot-inner {
+    max-width: 1080px; margin: 0 auto; padding: 0 32px;
+    display: flex; gap: 40px; align-items: baseline; flex-wrap: wrap;
+  }
+  footer .meta { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  footer a { color: var(--muted); font-size: 13px; text-decoration: none; margin-right: 22px; }
+  footer a:hover { color: var(--ink); }
+
+  /* ---------- 入场动画 ---------- */
+  .reveal { opacity: 0; transform: translateY(12px); transition: opacity 600ms cubic-bezier(0.16,1,0.3,1), transform 600ms cubic-bezier(0.16,1,0.3,1); }
+  .reveal.in { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1; transform: none; transition: none; }
+    html { scroll-behavior: auto; }
+  }
+
+  @media (max-width: 900px) {
+    .principles { grid-template-columns: 1fr 1fr; }
+    .grid-3, .tools-grid, .grid-2 { grid-template-columns: 1fr; }
+    .flow-step { grid-template-columns: 40px 1fr; }
+    .flow-step .what { grid-column: 2; }
+    .nav-links { display: none; }
+  }
+  @media print {
+    nav, .reveal { display: block !important; opacity: 1 !important; transform: none !important; }
+    .reveal { display: block; }
+    body { background: #fff; }
+    .card:hover, .tool-card:hover { box-shadow: none; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a class="brand" href="#top">gzh-mcp</a>
+    <div class="nav-links">
+      <a href="#quickstart">快速开始</a>
+      <a href="#security">安全模型</a>
+      <a href="#tools">工具清单</a>
+      <a href="#workflow">工作流</a>
+      <a href="#html">正文 HTML</a>
+      <a href="#limits">限制</a>
+    </div>
+  </div>
+</nav>
+
+<main id="top">
+
+<!-- ============ 首屏 ============ -->
+<header class="hero">
+  <div class="hero-badges reveal">
+    <span class="badge blue">MCP · stdio</span>
+    <span class="badge green">58 个工具</span>
+    <span class="badge yellow">Python 3.12+ / uv</span>
+    <span class="badge red">MIT License</span>
+  </div>
+  <h1 class="reveal">微信公众号管理<br>MCP Server 使用手册</h1>
+  <p class="lede reveal">
+    把草稿发布、素材、统计、用户标签、菜单、评论、群发、定向推送与常用基础接口
+    封装成标准 MCP 工具，供本机 MCP 客户端（Claude Code、Codex CLI 等）调用。
+    本手册对应仓库 README 与 docs/ 的现行版本。
+  </p>
+  <div class="principles reveal">
+    <div class="principle">
+      <span class="num">01</span>
+      <h3>不做排版</h3>
+      <p><code class="inline">create_draft</code> 接受已排版的微信 HTML，Markdown 转换由调用方完成。</p>
+    </div>
+    <div class="principle">
+      <span class="num">02</span>
+      <h3>无本地状态</h3>
+      <p>不持久化业务数据；仅下载工具按指定路径写文件，且拒绝覆盖已有文件。</p>
+    </div>
+    <div class="principle">
+      <span class="num">03</span>
+      <h3>凭据零落盘</h3>
+      <p>AppSecret 只从环境变量注入；secret 与 access_token 全链路脱敏。</p>
+    </div>
+    <div class="principle">
+      <span class="num">04</span>
+      <h3>错误详情可见</h3>
+      <p>微信 errcode/errmsg、本地拒绝理由完整返回给调用方，不被 SDK 掩码。</p>
+    </div>
+  </div>
+</header>
+
+<!-- ============ 快速开始 ============ -->
+<section id="quickstart">
+  <div class="sec-head reveal"><span class="sec-no">01</span><h2>快速开始</h2></div>
+  <p class="sec-desc reveal">从零到能调用第一个工具，需要完成依赖安装与客户端注册两步。</p>
+
+  <div class="grid-3 reveal" style="margin-bottom: 30px;">
+    <div class="card">
+      <h3>环境要求</h3>
+      <ul>
+        <li>Python 3.12+ 与 uv</li>
+        <li>公众号 AppID / AppSecret（公众平台 → 设置与开发 → 基本配置）</li>
+        <li>出口 IP 已加入公众号 IP 白名单，否则报 <code class="inline">40164</code></li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>发布权限说明</h3>
+      <ul>
+        <li><code class="inline">freepublish/*</code> 仅对已认证账号开放</li>
+        <li>个人主体 / 未认证账号通常返回 <code class="inline">48001</code></li>
+        <li>草稿与素材接口不受此限制</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>安装与自检</h3>
+      <ul>
+        <li><code class="inline">git clone</code> 后进入目录执行 <code class="inline">uv sync</code></li>
+        <li><code class="inline">uv run pytest</code> 验证安装（测试全 mock，不真实调微信）</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="window reveal">
+    <div class="window-bar"><i></i><i></i><i></i><span>安装</span></div>
+<pre><span class="c"># 克隆并安装依赖</span>
+git clone https://github.com/onlyoasis/gzh-mcp.git
+cd gzh-mcp
+uv sync
+uv run pytest   <span class="c"># 验证安装：195 个测试应全部通过</span></pre>
+  </div>
+
+  <div class="window reveal">
+    <div class="window-bar"><i></i><i></i><i></i><span>MCP 客户端配置（stdio JSON）</span></div>
+<pre>{
+  <span class="k">"mcpServers"</span>: {
+    <span class="k">"gzh"</span>: {
+      <span class="k">"command"</span>: <span class="s">"uv"</span>,
+      <span class="k">"args"</span>: [<span class="s">"run"</span>, <span class="s">"--directory"</span>, <span class="s">"/path/to/gzh-mcp"</span>, <span class="s">"gzh-mcp"</span>],
+      <span class="k">"env"</span>: {
+        <span class="k">"WECHAT_APPID"</span>: <span class="s">"&lt;你的 AppID&gt;"</span>,
+        <span class="k">"WECHAT_SECRET"</span>: <span class="s">"&lt;你的 AppSecret&gt;"</span>,
+        <span class="k">"GZH_MCP_PROXY"</span>: <span class="s">"http://127.0.0.1:2080"</span>,
+        <span class="k">"GZH_MCP_ALLOW_PUBLISH"</span>: <span class="s">"0"</span>,
+        <span class="k">"GZH_MCP_ALLOW_MASS_SEND"</span>: <span class="s">"0"</span>
+      }
+    }
+  }
+}</pre>
+  </div>
+
+  <div class="window reveal">
+    <div class="window-bar"><i></i><i></i><i></i><span>Claude Code 命令行注册</span></div>
+<pre>claude mcp add gzh -s user \
+  -e WECHAT_APPID=&lt;你的 AppID&gt; \
+  -e WECHAT_SECRET=&lt;你的 AppSecret&gt; \
+  -- uv run --directory /path/to/gzh-mcp gzh-mcp</pre>
+  </div>
+
+  <div class="table-wrap reveal">
+    <table>
+      <thead>
+        <tr><th style="width:230px">环境变量</th><th style="width:80px">必填</th><th>说明</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>WECHAT_APPID</code></td><td>是</td><td>公众号 AppID</td></tr>
+        <tr><td><code>WECHAT_SECRET</code></td><td>是</td><td>AppSecret，仅经环境变量注入，不落任何文件</td></tr>
+        <tr><td><code>GZH_MCP_PROXY</code></td><td>否</td><td>显式 HTTP(S) 代理；server 不继承宿主代理环境，适用于固定出口 IP 白名单</td></tr>
+        <tr><td><code>GZH_MCP_ALLOW_PUBLISH</code></td><td>否</td><td><code>1</code>/<code>true</code> 注册 <code>publish_draft</code>；其余值一律视为关闭</td></tr>
+        <tr><td><code>GZH_MCP_ALLOW_MASS_SEND</code></td><td>否</td><td><code>1</code>/<code>true</code> 注册 4 个群发发送 / 预览工具；其余值一律视为关闭</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note reveal">
+    <strong>注意：</strong>MCP 客户端会缓存工具列表。修改闸门环境变量后需要重启客户端，
+    新注册或移除的工具才会生效。
+  </div>
+</section>
+
+<!-- ============ 安全模型 ============ -->
+<section id="security">
+  <div class="sec-head reveal"><span class="sec-no">02</span><h2>安全模型</h2></div>
+  <p class="sec-desc reveal">
+    发布、群发、定向推送和删除会改变外部状态。server 通过「注册闸门 + 调用闸门」双层控制，
+    校验失败时不发出任何 HTTP 请求。
+  </p>
+
+  <div class="grid-2 reveal">
+    <div class="card">
+      <h3>1 · 注册闸门（安装时）</h3>
+      <p><code class="inline">GZH_MCP_ALLOW_PUBLISH</code> 严格匹配 <code class="inline">1</code> 或小写
+      <code class="inline">true</code>（<code class="inline">0</code>/<code class="inline">false</code>/<code class="inline">TRUE</code>/空串均不生效）时，
+      <code class="inline">publish_draft</code> 才会出现在工具列表。</p>
+    </div>
+    <div class="card">
+      <h3>2 · 确认闸门（每次调用）</h3>
+      <p><code class="inline">publish_draft</code> 必须显式传 <code class="inline">confirm=true</code>，
+      否则直接拒绝，不发出任何 HTTP 请求。</p>
+    </div>
+    <div class="card">
+      <h3>3 · 群发双闸门</h3>
+      <p><code class="inline">GZH_MCP_ALLOW_MASS_SEND</code> 严格为 <code class="inline">1</code>/<code class="inline">true</code> 时
+      4 个群发工具才注册；其中三个发送工具还必须传非空 <code class="inline">clientmsgid</code> 与
+      <code class="inline">confirm=true</code>。</p>
+    </div>
+    <div class="card">
+      <h3>4 · 逐次确认</h3>
+      <p>删除类工具（草稿 / 已发布文章 / 素材 / 标签 / 菜单 / 群发消息）以及客服、模板、
+      订阅通知发送工具，每次调用都必须显式传 <code class="inline">confirm=true</code>。</p>
+    </div>
+  </div>
+
+  <div class="table-wrap reveal" style="margin-top: 20px;">
+    <table>
+      <thead><tr><th style="width:300px">其他安全行为</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>脱敏</td><td><code class="inline">WECHAT_SECRET</code> 与 access_token 不出现在错误信息、日志或 stdout；stdout 只承载 MCP JSON-RPC，诊断写 stderr</td></tr>
+        <tr><td>非幂等不重试</td><td>创建草稿、发布、群发与定向推送遇网络传输错误返回「状态不确定」错误，禁止自动重试，防止重复建稿、重复提交</td></tr>
+        <tr><td>只读有限重试</td><td>只读接口遇传输错误、HTTP 5xx 或微信 <code class="inline">errcode=-1</code> 最多退避重试一次</td></tr>
+        <tr><td>草稿前置拦截</td><td>非微信域正文图 URL、<code class="inline">&lt;script&gt;</code>、空标题/正文在本地拒绝；图片按文件魔数校验真实格式</td></tr>
+        <tr><td>创建后回读验证</td><td>自动核对标题、图片数、正文长度；微信清洗了内容时返回 <code class="inline">verified=false</code> + 差异详情，不静默成功</td></tr>
+        <tr><td>发布结果可核对</td><td>带脱敏 appid 前缀、草稿标题、media_id，便于调用方核对目标账号</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============ 工具清单 ============ -->
+<section id="tools">
+  <div class="sec-head reveal"><span class="sec-no">03</span><h2>工具清单</h2></div>
+  <p class="sec-desc reveal">
+    完整启用后共 <strong>58 个工具</strong>，按域划分如下。虚线红色标签表示受闸门控制、
+    默认不注册的工具。
+  </p>
+
+  <div class="tools-grid">
+    <div class="tool-card reveal">
+      <div class="head"><h3>v1 草稿发布</h3><span class="count">10 个</span></div>
+      <p class="rule">除 publish_draft 外默认注册</p>
+      <div class="chips">
+        <span class="chip">check_credentials</span><span class="chip">upload_content_image</span><span class="chip">upload_cover_image</span><span class="chip">create_draft</span><span class="chip">get_draft</span><span class="chip">update_draft</span><span class="chip">list_drafts</span><span class="chip gated">publish_draft</span><span class="chip">get_publish_status</span><span class="chip">list_published</span>
+      </div>
+    </div>
+    <div class="tool-card reveal">
+      <div class="head"><h3>发布补充</h3><span class="count">3 个</span></div>
+      <p class="rule">默认注册；删除需 confirm=true</p>
+      <div class="chips">
+        <span class="chip">delete_draft</span><span class="chip">get_published_article</span><span class="chip">delete_published_article</span>
+      </div>
+    </div>
+    <div class="tool-card reveal">
+      <div class="head"><h3>素材</h3><span class="count">8 个</span></div>
+      <p class="rule">默认注册；删除需确认，下载拒绝覆盖已有文件</p>
+      <div class="chips">
+        <span class="chip">upload_video_material</span><span class="chip">upload_voice_material</span><span class="chip">get_material</span><span class="chip">delete_material</span><span class="chip">list_materials</span><span class="chip">count_materials</span><span class="chip">upload_temp_media</span><span class="chip">download_temp_media</span>
+      </div>
+    </div>
+    <div class="tool-card reveal">
+      <div class="head"><h3>数据统计</h3><span class="count">1 个</span></div>
+      <p class="rule">默认注册；支持的 report 与时间跨度会前置校验</p>
+      <div class="chips"><span class="chip">get_statistics_report</span></div>
+    </div>
+    <div class="tool-card reveal">
+      <div class="head"><h3>用户与标签</h3><span class="count">14 个</span></div>
+      <p class="rule">默认注册；删除标签需确认</p>
+      <div class="chips">
+        <span class="chip">list_users</span><span class="chip">get_user_info</span><span class="chip">batch_get_user_info</span><span class="chip">update_user_remark</span><span class="chip">create_tag</span><span class="chip">list_tags</span><span class="chip">update_tag</span><span class="chip">delete_tag</span><span class="chip">get_user_ids_by_tag</span><span class="chip">tag_users</span><span class="chip">untag_users</span><span class="chip">list_blacklist</span><span class="chip">blacklist_users</span><span class="chip">unblacklist_users</span>
+      </div>
+    </div>
+    <div class="tool-card reveal">
+      <div class="head"><h3>菜单</h3><span class="count">6 个</span></div>
+      <p class="rule">默认注册；删除需确认</p>
+      <div class="chips">
+        <span class="chip">create_menu</span><span class="chip">get_current_menu</span><span class="chip">delete_menu</span><span class="chip">create_conditional_menu</span><span class="chip">delete_conditional_menu</span><span class="chip">try_match_conditional_menu</span>
+      </div>
+    </div>
+    <div class="tool-card reveal">
+      <div class="head"><h3>评论</h3><span class="count">3 个</span></div>
+      <p class="rule">默认注册</p>
+      <div class="chips">
+        <span class="chip">list_comments</span><span class="chip">mark_comment_elect</span><span class="chip">unmark_comment_elect</span>
+      </div>
+    </div>
+    <div class="tool-card reveal">
+      <div class="head"><h3>群发</h3><span class="count">6 个</span></div>
+      <p class="rule">前 4 个需开启群发闸门；发送还需 clientmsgid 与确认；状态查询和删除默认注册</p>
+      <div class="chips">
+        <span class="chip gated">mass_send_all</span><span class="chip gated">mass_send_by_tag</span><span class="chip gated">mass_send_by_openids</span><span class="chip gated">preview_mass_message</span><span class="chip">get_mass_status</span><span class="chip">delete_mass_message</span>
+      </div>
+    </div>
+    <div class="tool-card reveal">
+      <div class="head"><h3>定向推送</h3><span class="count">3 个</span></div>
+      <p class="rule">默认注册；每次发送需 confirm=true</p>
+      <div class="chips">
+        <span class="chip">send_custom_message</span><span class="chip">send_template_message</span><span class="chip">send_subscribe_message</span>
+      </div>
+    </div>
+    <div class="tool-card reveal">
+      <div class="head"><h3>杂项</h3><span class="count">4 个</span></div>
+      <p class="rule">默认注册</p>
+      <div class="chips">
+        <span class="chip">create_qrcode</span><span class="chip">get_jsapi_ticket</span><span class="chip">get_autoreply_config</span><span class="chip">get_server_ips</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="note reveal">
+    <strong>明确不实现：</strong><code class="inline">sns/*</code>、<code class="inline">shorturl</code>、
+    <code class="inline">getarticletotal</code>、群发速度配置、模板行业配置、
+    <code class="inline">genShortKey</code>、Markdown 排版与内容合规检查。
+  </div>
+</section>
+
+<!-- ============ 工作流 ============ -->
+<section id="workflow">
+  <div class="sec-head reveal"><span class="sec-no">04</span><h2>典型工作流</h2></div>
+  <p class="sec-desc reveal">发布一篇已排版的 HTML 文章的完整链路；开启自动发布后追加第 6–7 步。</p>
+
+  <div class="flow reveal">
+    <div class="flow-step">
+      <span class="n">01</span>
+      <span class="tool">check_credentials</span>
+      <span class="what">确认凭据与 IP 白名单正常</span>
+    </div>
+    <div class="flow-step">
+      <span class="n">02</span>
+      <span class="tool">upload_cover_image(cover.png)</span>
+      <span class="what">得到 <code>thumb_media_id</code>（封面永久素材）</span>
+    </div>
+    <div class="flow-step">
+      <span class="n">03</span>
+      <span class="tool">upload_content_image(a.png) …</span>
+      <span class="what">得到微信图片 URL，替换正文 HTML 中的 <code>src</code></span>
+    </div>
+    <div class="flow-step">
+      <span class="n">04</span>
+      <span class="tool">create_draft([{title, content, thumb_media_id, digest}])</span>
+      <span class="what">创建草稿，返回 <code>media_id</code> + <code>verified</code></span>
+    </div>
+    <div class="flow-step">
+      <span class="n">05</span>
+      <span class="tool">人工在公众号后台复核草稿，发布</span>
+      <span class="what">默认路径：发布动作由人工完成</span>
+    </div>
+    <div class="flow-step">
+      <span class="n">06</span>
+      <span class="tool">publish_draft(media_id, confirm=true)</span>
+      <span class="what">需 <code>GZH_MCP_ALLOW_PUBLISH=1</code>；提交发布，返回 <code>publish_id</code></span>
+    </div>
+    <div class="flow-step">
+      <span class="n">07</span>
+      <span class="tool">get_publish_status(publish_id)</span>
+      <span class="what">轮询异步发布状态，直至终态</span>
+    </div>
+  </div>
+
+  <div class="table-wrap reveal" style="margin-top: 26px;">
+    <table>
+      <thead><tr><th style="width:120px">状态码</th><th>含义</th></tr></thead>
+      <tbody>
+        <tr><td><code>0</code></td><td>成功</td></tr>
+        <tr><td><code>1</code></td><td>发布中</td></tr>
+        <tr><td><code>2</code></td><td>原创失败</td></tr>
+        <tr><td><code>3</code></td><td>常规失败</td></tr>
+        <tr><td><code>4</code></td><td>审核不通过</td></tr>
+        <tr><td><code>5 / 6</code></td><td>成功后被删除 / 封禁</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============ 正文 HTML ============ -->
+<section id="html">
+  <div class="sec-head reveal"><span class="sec-no">05</span><h2>正文 HTML 规则</h2></div>
+  <p class="sec-desc reveal">
+    <code class="inline">create_draft</code> / <code class="inline">update_draft</code> 的
+    <code class="inline">content</code> 字段接受已排版的微信 HTML。本地只强制以下三条，
+    失败不发任何 HTTP 请求，错误信息直达调用方。
+  </p>
+
+  <div class="reveal">
+    <div class="rule-row">
+      <span class="mark no">1</span>
+      <div>
+        <h3>content 必须是非空字符串</h3>
+        <p>空串或缺失会以「content 必须是非空字符串」拒绝。</p>
+      </div>
+    </div>
+    <div class="rule-row">
+      <span class="mark no">2</span>
+      <div>
+        <h3>禁止 &lt;script&gt; 标签</h3>
+        <p>大小写不敏感，<code class="inline">&lt;SCRIPT&gt;</code> 同样拒绝；微信保存时也会移除 JS。</p>
+      </div>
+    </div>
+    <div class="rule-row">
+      <span class="mark no">3</span>
+      <div>
+        <h3>正文图片必须是微信域名</h3>
+        <p>每个 <code class="inline">&lt;img&gt;</code> 的 <code class="inline">src</code>（或 <code class="inline">data-src</code>）必须是 http(s) 协议且域名为
+        <code class="inline">mmbiz.qpic.cn</code> / <code class="inline">mmbiz.qlogo.cn</code>；相对路径与外链一律拒绝——微信本来就会过滤外链图，本地先报错可避免建稿成功但图全丢。</p>
+      </div>
+    </div>
+    <div class="rule-row">
+      <span class="mark ok">4</span>
+      <div>
+        <h3>正文图：先上传、后引用</h3>
+        <p><code class="inline">upload_content_image</code> 只接受 JPEG / PNG（按文件魔数判定，不看扩展名），严格小于 1MB；
+        返回的微信 URL 填进 <code class="inline">src</code>。封面不在 HTML 里，走 <code class="inline">upload_cover_image</code> 的
+        <code class="inline">thumb_media_id</code>（JPEG/PNG/GIF/BMP，≤10MB）。</p>
+      </div>
+    </div>
+    <div class="rule-row">
+      <span class="mark ok">5</span>
+      <div>
+        <h3>长度交由平台判定</h3>
+        <p>标题只校验非空（真机实测 39 字符可保存）；正文不做本地长度限制（实测 24061 字符可保存）；
+        摘要 <code class="inline">digest</code> 保留 ≤120 字符的保守限制（官方上限 128）。</p>
+      </div>
+    </div>
+    <div class="rule-row">
+      <span class="mark ok">6</span>
+      <div>
+        <h3>创建后自动回读验证</h3>
+        <p>核对文章数、标题、图片数、正文长度（缩水超 5% 报警），不一致返回
+        <code class="inline">verified=false</code> + <code class="inline">verification_errors</code>，不静默成功。微信会把
+        <code class="inline">src</code> 归一化为 <code class="inline">data-src</code>（懒加载），两者都计入图片数，属正常现象。</p>
+      </div>
+    </div>
+    <div class="rule-row">
+      <span class="mark ok">7</span>
+      <div>
+        <h3>图片帖（article_type=newspic）</h3>
+        <p><code class="inline">content</code> 只是说明文字；图片由 <code class="inline">image_info.image_list[].image_media_id</code>
+        提供，1–20 个非空永久素材 ID，回读时核对图片数。</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="window reveal" style="margin-top: 26px;">
+    <div class="window-bar"><i></i><i></i><i></i><span>通过本地校验形状的最小 HTML</span></div>
+<pre><span class="s">&lt;section style="margin: 0; padding: 16px;"&gt;</span>
+  <span class="s">&lt;p style="font-size: 15px; line-height: 1.75;"&gt;</span>正文第一段。<span class="s">&lt;/p&gt;</span>
+  <span class="s">&lt;p style="font-size: 15px; line-height: 1.75;"&gt;</span>
+    <span class="s">&lt;img src="https://mmbiz.qpic.cn/mmbiz_png/xxxx.png" style="width: 100%;"&gt;</span>
+  <span class="s">&lt;/p&gt;</span>
+<span class="s">&lt;/section&gt;</span></pre>
+  </div>
+
+  <div class="table-wrap reveal">
+    <table>
+      <thead><tr><th style="width:340px">常见错误信息</th><th>原因与处理</th></tr></thead>
+      <tbody>
+        <tr><td><code>content 不能包含 script 标签</code></td><td>HTML 含 &lt;script&gt;（含大小写变体），移除脚本</td></tr>
+        <tr><td><code>content 含非微信正文图片 URL: …</code></td><td>src 非微信域或相对路径；先 upload_content_image 再替换 URL</td></tr>
+        <tr><td><code>图片真实格式必须是 JPEG 或 PNG</code></td><td>正文图魔数不符，转换格式</td></tr>
+        <tr><td><code>正文图片必须严格小于 1MB</code></td><td>正文图 ≥ 1MiB，压缩图片</td></tr>
+        <tr><td><code>digest 不能超过 120 字符</code></td><td>摘要超长，截短</td></tr>
+        <tr><td><code>第 N 篇图片数量不一致</code>（verified=false）</td><td>微信过滤了图片，查看差异详情并修正</td></tr>
+        <tr><td><code>第 N 篇正文长度缩水超过 5%</code></td><td>微信清洗了部分内容，后台复核或 update_draft 修正</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============ 限制 ============ -->
+<section id="limits">
+  <div class="sec-head reveal"><span class="sec-no">06</span><h2>已知约定与限制</h2></div>
+  <div class="grid-2 reveal">
+    <div class="card">
+      <h3>状态与对账</h3>
+      <ul>
+        <li>server 无本地状态：<code class="inline">media_id → publish_id</code> 映射由调用方记录</li>
+        <li>事后对账用 <code class="inline">list_published</code></li>
+        <li>发布为异步语义：拿到 publish_id 不等于发布成功，以 <code class="inline">get_publish_status</code> 终态为准</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>文件路径边界</h3>
+      <ul>
+        <li><code class="inline">file_path</code> 指 MCP server 所在主机的本地文件</li>
+        <li>server 与客户端须同机，不支持远程部署</li>
+        <li><code class="inline">get_material</code> / <code class="inline">download_temp_media</code> 的 <code class="inline">save_path</code> 自动建父目录，目标文件存在时拒绝覆盖</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>媒体限制</h3>
+      <ul>
+        <li>正文图：jpg/png 且严格小于 1MB</li>
+        <li>封面：jpg/png/gif/bmp，≤10MB</li>
+        <li>图片按文件魔数校验真实格式，扩展名伪装无效</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>开发与验证</h3>
+      <ul>
+        <li><code class="inline">uv sync</code> 安装依赖；<code class="inline">uv run pytest</code> 全量测试</li>
+        <li><code class="inline">uv run gzh-mcp</code> 本地启动（stdio）</li>
+        <li>测试全部 mock，不真实调用微信；回归测试须先红灯验证</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <span class="meta">gzh-mcp · 使用手册 · 2026-09-20 整理自仓库现行文档</span>
+    <nav style="margin-left:auto">
+      <a href="https://github.com/onlyoasis/gzh-mcp">GitHub 仓库</a>
+      <a href="proposal.md">设计方案 v1</a>
+      <a href="proposal-v2.md">设计方案 v2</a>
+      <a href="api-verification.md">接口查证证据</a>
+      <a href="html-usage.md">正文 HTML 说明（Markdown）</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var nodes = document.querySelectorAll('.reveal');
+    if (reduce || !('IntersectionObserver' in window)) {
+      nodes.forEach(function (n) { n.classList.add('in'); });
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+      });
+    }, { threshold: 0.08 });
+    nodes.forEach(function (n, i) {
+      n.style.transitionDelay = Math.min(i % 4, 3) * 60 + 'ms';
+      io.observe(n);
+    });
+  })();
+</script>
+
+</body>
+</html>

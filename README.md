@@ -180,6 +180,10 @@ uv run gzh-mcp                             # 本地启动（stdio）
 - [docs/proposal-v2.md](docs/proposal-v2.md) —— v2 设计契约（47 个新增工具）
 - [docs/task-implement-v2.md](docs/task-implement-v2.md) —— v2 实现任务书
   （含 B13～B24 行为契约）
+- [docs/html-usage.md](docs/html-usage.md) —— 正文 HTML 使用说明
+  （校验规则、图片引用、回读验证、错误速查）
+- [docs/usage.html](docs/usage.html) —— 使用手册单页 HTML 版
+  （浏览器直接打开；内容同 README + 正文 HTML 规则）
 
 ## License
 
