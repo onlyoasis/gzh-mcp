@@ -78,6 +78,7 @@ ENDPOINT_CASES = [
     EndpointCase("create_conditional_menu", (MENU_BUTTONS, MATCH_RULE), path="/cgi-bin/menu/addconditional", payload={"button": MENU_BUTTONS, "matchrule": MATCH_RULE}),
     EndpointCase("delete_conditional_menu", ("menu-id",), path="/cgi-bin/menu/delconditional", payload={"menuid": "menu-id"}),
     EndpointCase("try_match_conditional_menu", ("openid",), path="/cgi-bin/menu/trymatch", payload={"user_id": "openid"}),
+    EndpointCase("open_comment", (123, 1), path="/cgi-bin/comment/open", payload={"msg_data_id": 123, "index": 1}),
     EndpointCase("list_comments", (123, 1, 0, 20, 0), path="/cgi-bin/comment/list", payload={"msg_data_id": 123, "index": 1, "begin": 0, "count": 20, "type": 0}),
     EndpointCase("mark_comment_elect", (123, 1, 456), path="/cgi-bin/comment/markelect", payload={"msg_data_id": 123, "index": 1, "user_comment_id": 456}),
     EndpointCase("unmark_comment_elect", (123, 1, 456), path="/cgi-bin/comment/unmarkelect", payload={"msg_data_id": 123, "index": 1, "user_comment_id": 456}),

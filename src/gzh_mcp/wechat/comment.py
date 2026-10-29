@@ -8,6 +8,15 @@ from ..validation import ValidationError
 
 
 class CommentMixin:
+    async def open_comment(self, msg_data_id: int, index: int) -> dict[str, Any]:
+        if index < 0:
+            raise ValidationError("index 不能小于 0")
+        return await self._api_request(
+            "POST",
+            "/comment/open",
+            payload={"msg_data_id": msg_data_id, "index": index},
+        )
+
     async def list_comments(
         self,
         msg_data_id: int,

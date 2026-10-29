@@ -117,11 +117,12 @@ api"），从注册表移除；阅读/转发数据由新系列接口提供，且
 | `delete_conditional_menu(menu_id, confirm)` | menu/delconditional | confirm |
 | `try_match_conditional_menu(user_id)` | menu/trymatch | 只读 |
 
-### 3.6 评论（3）
+### 3.6 评论（4）
 
-`list_comments`（comment/list，只读）、`mark_comment_elect`
-（comment/markelect）、`unmark_comment_elect`（comment/unmarkelect），
-参数形状以官方文档为准。需要留言功能权限。
+`open_comment`（comment/open，打开已发表文章的留言）、`list_comments`
+（comment/list，只读）、`mark_comment_elect`（comment/markelect）、
+`unmark_comment_elect`（comment/unmarkelect），参数形状以官方文档为准。
+需要留言功能权限。
 
 ### 3.7 群发（5，环境变量闸门）
 

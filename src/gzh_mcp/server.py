@@ -344,6 +344,12 @@ def register_menu_tools(server: MCPServer, client: Any) -> None:
 
 
 def register_comment_tools(server: MCPServer, client: Any) -> None:
+    @server.tool(annotations=REMOTE_MUTATION)
+    async def open_comment(msg_data_id: int, index: int) -> dict[str, Any]:
+        """打开已发表文章的留言。"""
+
+        return await client.open_comment(msg_data_id, index)
+
     @server.tool(annotations=READ_ONLY)
     async def list_comments(
         msg_data_id: int,

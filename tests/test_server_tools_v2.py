@@ -42,6 +42,7 @@ NEW_TOOLS = {
     "create_conditional_menu",
     "delete_conditional_menu",
     "try_match_conditional_menu",
+    "open_comment",
     "list_comments",
     "mark_comment_elect",
     "unmark_comment_elect",
@@ -96,7 +97,7 @@ async def test_b13_mass_tools_are_absent_for_non_strict_values(
     names = await listed_tool_names(environ)
     assert MASS_GATED_TOOLS.isdisjoint(names)
     assert NEW_TOOLS - MASS_GATED_TOOLS <= names
-    assert len(NEW_TOOLS & names) == 44
+    assert len(NEW_TOOLS & names) == 45
 
 
 @pytest.mark.asyncio
@@ -104,7 +105,7 @@ async def test_b13_mass_tools_are_absent_for_non_strict_values(
 async def test_b13_mass_tools_are_registered_for_strict_true(switch: str) -> None:
     names = await listed_tool_names({"GZH_MCP_ALLOW_MASS_SEND": switch})
     assert NEW_TOOLS <= names
-    assert len(NEW_TOOLS & names) == 48
+    assert len(NEW_TOOLS & names) == 49
 
 
 @pytest.mark.asyncio
